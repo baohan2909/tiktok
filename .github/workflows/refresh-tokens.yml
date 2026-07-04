@@ -25,5 +25,5 @@ jobs:
         working-directory: worker
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          REFRESH_SECRET: ${{ secrets.REFRESH_SECRET }}
         run: node refresh.mjs

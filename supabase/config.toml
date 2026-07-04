@@ -6,6 +6,6 @@ project_id = "dosfidaqatczisbjtpls"
 [functions.oauth-callback]
 verify_jwt = false
 
-# oauth-refresh: tự kiểm tra bearer == service role key trong code -> tắt verify gateway.
+# oauth-refresh: tự kiểm tra header x-refresh-secret == REFRESH_SECRET -> tắt verify gateway.
 [functions.oauth-refresh]
 verify_jwt = false

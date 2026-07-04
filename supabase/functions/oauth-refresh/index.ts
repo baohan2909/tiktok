@@ -1,9 +1,10 @@
 // ============================================================
 // NS TIKTOK COMMAND CENTER — Edge Function: oauth-refresh
 // GitHub Actions (refresh-tokens.yml) gọi mỗi 01h VN.
-// Deploy với Verify JWT = OFF; tự kiểm tra bearer == service role key.
+// Deploy với Verify JWT = OFF; tự kiểm tra header x-refresh-secret == REFRESH_SECRET.
 // Refresh mọi access_token đang hoạt động; cập nhật Vault nếu có refresh_token mới.
-// Secrets cần: TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET (2 khóa kia Supabase tự cấp).
+// Secrets cần đặt trong Supabase: TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, REFRESH_SECRET.
+// (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY được Supabase tự cấp.)
 // ============================================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -11,6 +12,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const CLIENT_KEY = Deno.env.get("TIKTOK_CLIENT_KEY")!;
 const CLIENT_SECRET = Deno.env.get("TIKTOK_CLIENT_SECRET")!;
+const REFRESH_SECRET = Deno.env.get("REFRESH_SECRET");
 const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 
 const sb = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
@@ -23,9 +25,10 @@ function json(body: unknown, status = 200): Response {
 }
 
 Deno.serve(async (req) => {
-  // Chỉ chấp nhận request mang service role key (GitHub Actions gửi kèm).
-  const auth = req.headers.get("Authorization") ?? "";
-  if (auth !== `Bearer ${SERVICE_ROLE}`) return json({ error: "unauthorized" }, 401);
+  // Chỉ chấp nhận request mang đúng REFRESH_SECRET (GitHub Actions gửi kèm header).
+  if (!REFRESH_SECRET) return json({ error: "REFRESH_SECRET chua duoc cau hinh" }, 500);
+  const provided = req.headers.get("x-refresh-secret") ?? "";
+  if (provided !== REFRESH_SECRET) return json({ error: "unauthorized" }, 401);
 
   const { data: ds, error } = await sb.rpc("oauth_ds_can_refresh");
   if (error) return json({ error: error.message }, 500);

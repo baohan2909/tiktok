@@ -1,36 +1,28 @@
 import { useEffect, useMemo } from "react";
 import type { EChartsOption } from "echarts";
 import {
-  useKenhs, useKenhSnapshots, useKenhVideos, useVideoSnapshots, useCanhBao,
+  useKenhs, useKenhSnapshots, useKenhVideos, useVideoSnapshots, useCanhBao, useDiemTuan,
 } from "../hooks/queries";
 import { EChart, CHART, AXIS_TEXT } from "../components/EChart";
 import {
-  SectionCard, EmptyState, Loading, DeltaText, MucDoBadge, TrangThaiKenh, Icon,
+  SectionCard, EmptyState, Loading, DeltaText, MucDoBadge, TrangThaiKenh, HangBadge, Sparkline, Icon,
 } from "../components/ui";
 import { soVN, soGon, ngayGon, ngayDay, ngayISO_VN, isoNgayTruoc, tinhER } from "../lib/format";
-import type { SnapshotVideo } from "../lib/types";
+import type { SnapshotVideo, DiemTuan } from "../lib/types";
 
 const THANG_VN = ["Th1", "Th2", "Th3", "Th4", "Th5", "Th6", "Th7", "Th8", "Th9", "Th10", "Th11", "Th12"];
 
-function Sparkline({ data, w = 88, h = 26 }: { data: number[]; w?: number; h?: number }) {
-  if (data.length < 2) return <span className="spark-empty">—</span>;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const rng = max - min || 1;
-  const pts = data
-    .map((v, i) => {
-      const x = (i / (data.length - 1)) * (w - 2) + 1;
-      const y = h - 2 - ((v - min) / rng) * (h - 4);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  return (
-    <svg width={w} height={h} className="spark" aria-hidden="true">
-      <polyline points={pts} fill="none" stroke={CHART.teal} strokeWidth="1.5"
-        strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+function barW(v: number, arr: { m: number }[]): string {
+  const max = Math.max(1, ...arr.map((x) => x.m));
+  return `${Math.max(3, (v / max) * 100)}%`;
 }
+const TRU = [
+  { key: "d_chuyencan", ten: "Chuyên cần", max: 25 },
+  { key: "d_noidung", ten: "Nội dung", max: 25 },
+  { key: "d_tangtruong", ten: "Tăng trưởng", max: 20 },
+  { key: "d_hitrate", ten: "Hit-rate", max: 15 },
+  { key: "d_live", ten: "Live", max: 15 },
+] as const;
 
 export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId: (id: number) => void }) {
   const kenhs = useKenhs();
@@ -42,6 +34,7 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
   const videoIds = (videos.data ?? []).map((v) => v.video_id);
   const vsnaps = useVideoSnapshots(videoIds);
   const canhBao = useCanhBao(kenhId);
+  const diem = useDiemTuan(8);
 
   // Tự chọn kênh đầu tiên nếu chưa chọn
   useEffect(() => {
@@ -92,6 +85,50 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
       m.set(d, (m.get(d) ?? 0) + (pv.last?.luot_xem ?? 0));
     }
     return [...m.entries()].map(([d, v]) => [d, v] as [string, number]);
+  }, [perVideo]);
+
+  // Radar 5 trụ: kênh này vs trung bình hệ thống (từ Health Score tuần mới nhất)
+  const radar = useMemo(() => {
+    const latest = new Map<number, DiemTuan>();
+    for (const d of diem.data ?? []) {
+      const cur = latest.get(d.kenh_id);
+      if (!cur || d.tuan > cur.tuan) latest.set(d.kenh_id, d);
+    }
+    const all = [...latest.values()];
+    const me = kenhId != null ? latest.get(kenhId) : undefined;
+    const avg = (key: string) =>
+      all.length ? all.reduce((a, d) => a + Number((d as unknown as Record<string, number>)[key] ?? 0), 0) / all.length : 0;
+    return {
+      co: !!me,
+      d_tong: me?.d_tong ?? null,
+      me: TRU.map((t) => Number((me as unknown as Record<string, number>)?.[t.key] ?? 0)),
+      sys: TRU.map((t) => Math.round(avg(t.key) * 10) / 10),
+    };
+  }, [diem.data, kenhId]);
+
+  // Phân tích cắt lớp: view trung vị theo nhãn / khung giờ đăng (giờ VN)
+  const catLop = useMemo(() => {
+    const push = (m: Map<string | number, number[]>, k: string | number, v: number) => {
+      const a = m.get(k);
+      if (a) a.push(v); else m.set(k, [v]);
+    };
+    const byNhan = new Map<string, number[]>();
+    const byGio = new Map<number, number[]>();
+    for (const pv of perVideo) {
+      const view = pv.last?.luot_xem;
+      if (view == null) continue;
+      push(byNhan as Map<string | number, number[]>, pv.v.nhan ?? "KHAC", view);
+      const h = parseInt(new Date(pv.v.dang_luc).toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", hour12: false }), 10);
+      push(byGio as Map<string | number, number[]>, Number.isFinite(h) ? h : 0, view);
+    }
+    const med = (arr: number[]) => {
+      const s = arr.slice().sort((a, b) => a - b);
+      return s.length ? s[Math.floor(s.length / 2)] : 0;
+    };
+    return {
+      nhan: [...byNhan.entries()].map(([k, v]) => ({ k, m: med(v), n: v.length })).sort((a, b) => b.m - a.m),
+      gio: [...byGio.entries()].map(([k, v]) => ({ k, m: med(v), n: v.length })).sort((a, b) => b.m - a.m).slice(0, 6),
+    };
   }, [perVideo]);
 
   // Header stats
@@ -156,6 +193,25 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
     series: [{ type: "heatmap", coordinateSystem: "calendar", data: heat }],
   };
 
+  const radarOption: EChartsOption = {
+    tooltip: { backgroundColor: "#0E1626", borderColor: CHART.line, textStyle: { color: CHART.ink } },
+    legend: { data: ["Kênh này", "Trung bình hệ thống"], textStyle: { color: CHART.mut, fontSize: 11 }, bottom: 0 },
+    radar: {
+      indicator: TRU.map((t) => ({ name: t.ten, max: t.max })),
+      axisName: { color: CHART.mut, fontSize: 11 },
+      splitLine: { lineStyle: { color: CHART.grid } },
+      splitArea: { areaStyle: { color: ["rgba(255,255,255,0.02)", "transparent"] } },
+      axisLine: { lineStyle: { color: CHART.line } },
+    },
+    series: [{
+      type: "radar",
+      data: [
+        { value: radar.me, name: "Kênh này", lineStyle: { color: CHART.gold, width: 2 }, itemStyle: { color: CHART.gold }, areaStyle: { color: "rgba(203,164,90,0.22)" } },
+        { value: radar.sys, name: "Trung bình hệ thống", lineStyle: { color: CHART.teal, width: 2 }, itemStyle: { color: CHART.teal }, areaStyle: { color: "rgba(63,182,168,0.10)" } },
+      ],
+    }],
+  };
+
   // ----- Render -----
   if (kenhs.isLoading) return <Loading />;
   if (list.length === 0) {
@@ -202,8 +258,21 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
                 <div className="kstat-v">{soVN(soVideo)}</div>
                 <div className="kstat-l">Video</div>
               </div>
+              <div className="kstat">
+                <div className="kstat-v"><HangBadge d={radar.d_tong} /></div>
+                <div className="kstat-l">Hạng tuần</div>
+              </div>
             </div>
           </div>
+        )}
+      </SectionCard>
+
+      {/* Radar 5 trụ */}
+      <SectionCard title="Radar 5 trụ (kênh vs trung bình hệ thống)" icon="grid">
+        {!radar.co ? (
+          <EmptyState title="Chưa có Health Score" hint="Chạy 006_metrics.sql và chờ cron 02:15 (cần nhiều kênh để so sánh)." />
+        ) : (
+          <EChart option={radarOption} height={300} />
         )}
       </SectionCard>
 
@@ -264,6 +333,34 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
         )}
       </SectionCard>
 
+      {/* Phân tích cắt lớp */}
+      {catLop.nhan.length > 0 && (
+        <SectionCard title="Phân tích cắt lớp — view trung vị" icon="chart">
+          <div className="catlop">
+            <div>
+              <div className="catlop-h">Theo nhãn nội dung</div>
+              {catLop.nhan.map((r) => (
+                <div key={r.k} className="catlop-row">
+                  <span className="nhan">{r.k}</span>
+                  <div className="catlop-bar"><div className="catlop-fill" style={{ width: barW(r.m, catLop.nhan) }} /></div>
+                  <span className="catlop-v mono">{soGon(r.m)}</span>
+                </div>
+              ))}
+            </div>
+            <div>
+              <div className="catlop-h">Khung giờ đăng hiệu quả nhất</div>
+              {catLop.gio.map((r) => (
+                <div key={r.k} className="catlop-row">
+                  <span className="catlop-k mono">{String(r.k).padStart(2, "0")}h</span>
+                  <div className="catlop-bar"><div className="catlop-fill teal" style={{ width: barW(r.m, catLop.gio) }} /></div>
+                  <span className="catlop-v mono">{soGon(r.m)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </SectionCard>
+      )}
+
       {/* Cảnh báo riêng kênh */}
       {canhBaoKenh.length > 0 && (
         <SectionCard title="Cảnh báo của kênh" icon="bell">
@@ -280,7 +377,7 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
 
       <div className="note-p1">
         <Icon name="grid" size={14} />
-        Radar 5 trụ, phân tích cắt lớp theo nhãn/khung giờ, lịch sử live sẽ có ở Phase 1.
+        Nhãn nội dung do Claude phân loại tự động + lịch sử live (form tự khai) sẽ bổ sung ở Phase 2.
       </div>
     </div>
   );

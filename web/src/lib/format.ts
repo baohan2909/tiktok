@@ -43,6 +43,15 @@ export function isoNgayTruoc(days: number): string {
   return now.toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
 }
 
+// Phân hạng từ Health Score: A(≥80) B(65–79) C(50–64) D(<50)
+export function capHang(dTong: number | null | undefined): "A" | "B" | "C" | "D" | "—" {
+  if (dTong == null) return "—";
+  if (dTong >= 80) return "A";
+  if (dTong >= 65) return "B";
+  if (dTong >= 50) return "C";
+  return "D";
+}
+
 // Engagement rate: (thích + 2·bình luận + 3·chia sẻ) / xem. Trả % (0–100).
 export function tinhER(
   xem: number | null,

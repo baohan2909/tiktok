@@ -1,15 +1,15 @@
 import { useEffect, useRef } from "react";
 import * as echarts from "echarts/core";
-import { LineChart, HeatmapChart } from "echarts/charts";
+import { LineChart, HeatmapChart, RadarChart } from "echarts/charts";
 import {
-  GridComponent, TooltipComponent, LegendComponent, VisualMapComponent, CalendarComponent,
+  GridComponent, TooltipComponent, LegendComponent, VisualMapComponent, CalendarComponent, RadarComponent,
 } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
 import type { EChartsOption } from "echarts";
 
 echarts.use([
-  LineChart, HeatmapChart,
-  GridComponent, TooltipComponent, LegendComponent, VisualMapComponent, CalendarComponent,
+  LineChart, HeatmapChart, RadarChart,
+  GridComponent, TooltipComponent, LegendComponent, VisualMapComponent, CalendarComponent, RadarComponent,
   CanvasRenderer,
 ]);
 

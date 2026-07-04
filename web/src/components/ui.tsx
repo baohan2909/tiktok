@@ -1,5 +1,33 @@
 import type { ReactNode } from "react";
-import { soGon, delta } from "../lib/format";
+import { soGon, delta, capHang } from "../lib/format";
+
+// ---------- Sparkline SVG (nhẹ, không dùng canvas) ----------
+export function Sparkline({ data, w = 88, h = 26, color = "#3FB6A8" }: { data: number[]; w?: number; h?: number; color?: string }) {
+  const pts = data.filter((v) => v != null);
+  if (pts.length < 2) return <span className="spark-empty">—</span>;
+  const min = Math.min(...pts);
+  const max = Math.max(...pts);
+  const rng = max - min || 1;
+  const path = pts
+    .map((v, i) => {
+      const x = (i / (pts.length - 1)) * (w - 2) + 1;
+      const y = h - 2 - ((v - min) / rng) * (h - 4);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  return (
+    <svg width={w} height={h} className="spark" aria-hidden="true">
+      <polyline points={path} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// ---------- Phân hạng A/B/C/D ----------
+export function HangBadge({ d }: { d: number | null | undefined }) {
+  const h = capHang(d);
+  const cls = h === "A" ? "ha" : h === "B" ? "hb" : h === "C" ? "hc" : h === "D" ? "hd" : "hn";
+  return <span className={`hang ${cls}`} title={d == null ? "chưa chấm" : `${d} điểm`}>{h}</span>;
+}
 
 // ---------- Icon SVG stroke (không emoji) ----------
 export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {

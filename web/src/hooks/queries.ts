@@ -8,6 +8,9 @@ import type {
   Video,
   SnapshotVideo,
   CanhBao,
+  DiemTuan,
+  SyncLog,
+  VideoKenh,
 } from "../lib/types";
 
 // Lấy HẾT dòng, vượt trần mặc định ~1000 của PostgREST bằng cách lặp .range().
@@ -123,4 +126,53 @@ export function useVideoSnapshots(videoIds: string[]) {
         supabase.from("tk_snapshot_video").select("*").in("video_id", videoIds).order("ngay").range(from, to),
       ),
   });
+}
+
+// Health Score các tuần gần đây (mọi kênh) — Xếp hạng + radar + biến động hạng.
+export function useDiemTuan(weeks = 8) {
+  return useQuery({
+    queryKey: ["diem_tuan", weeks],
+    queryFn: () =>
+      fetchAll<DiemTuan>((from, to) =>
+        supabase.from("tk_diem_tuan").select("*").gte("tuan", isoNgayTruoc(weeks * 7)).order("tuan").range(from, to),
+      ),
+  });
+}
+
+export function useSyncLog(limitN = 20) {
+  return useQuery({
+    queryKey: ["sync_log", limitN],
+    queryFn: async (): Promise<SyncLog[]> => {
+      const { data, error } = await supabase
+        .from("tk_sync_log")
+        .select("*")
+        .order("bat_dau", { ascending: false })
+        .limit(limitN);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+// Video toàn hệ thống (n ngày gần nhất) kèm tên kênh — cho Video Explorer.
+export function useVideoExplorer(days = 30, limitN = 500) {
+  return useQuery({
+    queryKey: ["video_explorer", days, limitN],
+    queryFn: async (): Promise<VideoKenh[]> => {
+      const { data, error } = await supabase
+        .from("tk_video")
+        .select("*, tk_kenh(username,khu_vuc,ma_ch)")
+        .gte("dang_luc", isoNgayTruoc(days))
+        .order("dang_luc", { ascending: false })
+        .limit(limitN);
+      if (error) throw error;
+      return (data ?? []) as unknown as VideoKenh[];
+    },
+  });
+}
+
+// Gạt trạng thái cảnh báo (anon được phép update trang_thai).
+export async function datTrangThaiCanhBao(id: number, trang_thai: string): Promise<void> {
+  const { error } = await supabase.from("tk_canh_bao").update({ trang_thai }).eq("id", id);
+  if (error) throw error;
 }

@@ -1,0 +1,40 @@
+name: bao-cao-tuan
+
+on:
+  schedule:
+    # Thứ 2 06:00 VN = Chủ nhật 23:00 UTC (sau pg_cron dựng digest 05:30 VN).
+    - cron: "0 23 * * 0"
+  workflow_dispatch:
+    inputs:
+      ngay:
+        description: "Chốt lại tuần chứa ngày này (YYYY-MM-DD, VN). Bỏ trống = tuần vừa kết thúc."
+        required: false
+        default: ""
+
+concurrency:
+  group: bao-cao-tuan
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Cài dependency
+        working-directory: worker
+        run: npm install --no-audit --no-fund
+
+      - name: Tạo báo cáo tuần (digest + Claude nhận định)
+        working-directory: worker
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NGAY: ${{ github.event.inputs.ngay }}
+        run: node report.mjs

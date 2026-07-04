@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Worker thu thap snapshot TikTok cho NS Command Center (GitHub Actions)",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
     "@supabase/supabase-js": "^2.58.0"
   }
 }

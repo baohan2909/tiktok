@@ -4,7 +4,7 @@ import { SectionCard, EmptyState, Loading, Icon } from "../components/ui";
 import { soGon, ngayDay, tinhER } from "../lib/format";
 
 export function VideoExplorer({ onChonKenh }: { onChonKenh: (id: number) => void }) {
-  const vids = useVideoExplorer(30, 500);
+  const vids = useVideoExplorer(30, 300);
   const videoIds = useMemo(() => (vids.data ?? []).map((v) => v.video_id), [vids.data]);
   const snaps = useVideoSnapshots(videoIds);
 

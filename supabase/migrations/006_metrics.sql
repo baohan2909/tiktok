@@ -42,7 +42,7 @@ begin
       order by s.ngay desc
       limit 1
     ) sv on true
-    where v.dang_luc >= (v_28::timestamptz)
+    where (v.dang_luc at time zone 'Asia/Ho_Chi_Minh')::date >= v_28
   ),
   sys as (
     select percentile_cont(0.75) within group (order by luot_xem) as p75_view
@@ -53,7 +53,8 @@ begin
       k.id as kenh_id,
       k.khu_vuc,
       -- chuyên cần
-      (select count(*) from tk_video v where v.kenh_id = k.id and v.dang_luc >= (v_28::timestamptz))::numeric / 4.0
+      (select count(*) from tk_video v
+        where v.kenh_id = k.id and (v.dang_luc at time zone 'Asia/Ho_Chi_Minh')::date >= v_28)::numeric / 4.0
         as video_per_tuan,
       coalesce((
         select case when count(*) >= 2 then 1.0 / (1.0 + coalesce(stddev_samp(gap), 0)) else 0 end
@@ -62,7 +63,7 @@ begin
           from (
             select distinct ((v2.dang_luc at time zone 'Asia/Ho_Chi_Minh')::date) as d
             from tk_video v2
-            where v2.kenh_id = k.id and v2.dang_luc >= (v_28::timestamptz)
+            where v2.kenh_id = k.id and (v2.dang_luc at time zone 'Asia/Ho_Chi_Minh')::date >= v_28
           ) dd
         ) g
         where gap is not null
@@ -162,7 +163,7 @@ begin
     and (p_ngay - last_post.d) >= 5
     and (
       select count(*) from tk_video v
-      where v.kenh_id = k.id and v.dang_luc >= (p_ngay - 56)::timestamptz
+      where v.kenh_id = k.id and (v.dang_luc at time zone 'Asia/Ho_Chi_Minh')::date >= p_ngay - 56
     )::numeric / 8.0 >= 3
     and not exists (
       select 1 from tk_canh_bao c
@@ -171,19 +172,22 @@ begin
 
   -- 2) VIDEO_BUNG_NO: tốc độ view ngày đầu > P95 hệ thống (video đăng trong 3 ngày).
   with dau as (
-    -- view của snapshot ĐẦU TIÊN mỗi video (xấp xỉ view 24h đầu)
+    -- view snapshot ĐẦU TIÊN trong ~1 ngày sau đăng (xấp xỉ view 24h đầu).
+    -- Ràng buộc ngày để không lấy view tích lũy nhiều ngày (kênh sync trễ).
     select v.video_id, v.kenh_id, v.dang_luc,
            (select s.luot_xem from tk_snapshot_video s
-            where s.video_id = v.video_id order by s.ngay asc limit 1) as view_dau
+            where s.video_id = v.video_id
+              and s.ngay <= ((v.dang_luc at time zone 'Asia/Ho_Chi_Minh')::date + 1)
+            order by s.ngay asc limit 1) as view_dau
     from tk_video v
-    where v.dang_luc >= (p_ngay - 90)::timestamptz
+    where (v.dang_luc at time zone 'Asia/Ho_Chi_Minh')::date >= p_ngay - 90
   ),
   p95 as (select percentile_cont(0.95) within group (order by view_dau) as v from dau where view_dau is not null)
   insert into tk_canh_bao (kenh_id, video_id, loai, muc_do, noi_dung)
   select d.kenh_id, d.video_id, 'VIDEO_BUNG_NO', 'THONG_TIN',
-         'Video bung no: view ngay dau ' || d.view_dau || ' vuot P95 he thong'
+         'Video bung no: view 24h dau ' || d.view_dau || ' vuot P95 he thong'
   from dau d, p95
-  where d.dang_luc >= (p_ngay - 3)::timestamptz
+  where (d.dang_luc at time zone 'Asia/Ho_Chi_Minh')::date >= p_ngay - 3
     and d.view_dau is not null and p95.v is not null
     and d.view_dau > p95.v
     and not exists (

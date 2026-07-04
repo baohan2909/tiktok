@@ -37,8 +37,8 @@ export function TongQuan({ onChonKenh }: { onChonKenh: (id: number) => void }) {
     return {
       tongFollower,
       dFollower: m.reduce((a, x) => a + (x.follower_tang ?? 0), 0),
-      videoTuan: m.reduce((a, x) => a + (x.video_moi ?? 0), 0),
-      viewTuan: m.reduce((a, x) => a + (x.xem_tang ?? 0), 0),
+      videoTuan: m.reduce((a, x) => a + Number(x.video_moi ?? 0), 0),
+      viewTuan: m.reduce((a, x) => a + Number(x.xem_tang ?? 0), 0),
       soKenhHoatDong: (kenhs.data ?? []).filter((k) => k.trang_thai === "HOAT_DONG").length,
       soKenh: (kenhs.data ?? []).length,
       dates,

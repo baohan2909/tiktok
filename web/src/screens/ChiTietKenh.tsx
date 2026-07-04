@@ -68,7 +68,7 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
     const fol = new Map<string, number>();
     for (const s of snaps.data ?? []) if (s.follower != null) fol.set(s.ngay, s.follower);
     const view = new Map<string, number>();
-    for (const s of vsnaps.data ?? []) view.set(s.ngay, (view.get(s.ngay) ?? 0) + (s.luot_xem ?? 0));
+    for (const s of vsnaps.data ?? []) view.set(s.ngay, (view.get(s.ngay) ?? 0) + Number(s.luot_xem ?? 0));
     const dates = [...new Set([...fol.keys(), ...view.keys()])].sort();
     return {
       dates,
@@ -82,7 +82,7 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
     const m = new Map<string, number>();
     for (const pv of perVideo) {
       const d = ngayISO_VN(pv.v.dang_luc); // ngày đăng theo giờ VN (khớp range heatmap)
-      m.set(d, (m.get(d) ?? 0) + (pv.last?.luot_xem ?? 0));
+      m.set(d, (m.get(d) ?? 0) + Number(pv.last?.luot_xem ?? 0));
     }
     return [...m.entries()].map(([d, v]) => [d, v] as [string, number]);
   }, [perVideo]);

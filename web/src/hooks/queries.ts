@@ -50,6 +50,7 @@ export function useSnapshotsKenh(days = 84) {
           .select("*")
           .gte("ngay", isoNgayTruoc(days))
           .order("ngay")
+          .order("kenh_id") // khóa phụ -> thứ tự duy nhất, phân trang ổn định
           .range(from, to),
       ),
   });
@@ -60,7 +61,13 @@ export function useMetricsTuan(days = 7) {
     queryKey: ["metrics_tuan", days],
     queryFn: () =>
       fetchAll<MetricNgay>((from, to) =>
-        supabase.from("tk_metric_ngay").select("*").gte("ngay", isoNgayTruoc(days)).range(from, to),
+        supabase
+          .from("tk_metric_ngay")
+          .select("*")
+          .gte("ngay", isoNgayTruoc(days))
+          .order("ngay")
+          .order("kenh_id") // thứ tự duy nhất cho phân trang
+          .range(from, to),
       ),
   });
 }
@@ -94,6 +101,7 @@ export function useKenhSnapshots(kenhId: number | undefined, days = 84) {
           .eq("kenh_id", kenhId!)
           .gte("ngay", isoNgayTruoc(days))
           .order("ngay")
+          .order("kenh_id")
           .range(from, to),
       ),
   });
@@ -121,10 +129,25 @@ export function useVideoSnapshots(videoIds: string[]) {
   return useQuery({
     enabled: videoIds.length > 0,
     queryKey: ["video_snaps", key],
-    queryFn: () =>
-      fetchAll<SnapshotVideo>((from, to) =>
-        supabase.from("tk_snapshot_video").select("*").in("video_id", videoIds).order("ngay").range(from, to),
-      ),
+    queryFn: async (): Promise<SnapshotVideo[]> => {
+      // Chia lô 100 id/lần: tránh URL .in() quá dài (>8KB -> 414) + phân trang ổn định
+      const CHUNK = 100;
+      const out: SnapshotVideo[] = [];
+      for (let i = 0; i < videoIds.length; i += CHUNK) {
+        const ids = videoIds.slice(i, i + CHUNK);
+        const rows = await fetchAll<SnapshotVideo>((from, to) =>
+          supabase
+            .from("tk_snapshot_video")
+            .select("*")
+            .in("video_id", ids)
+            .order("ngay")
+            .order("video_id")
+            .range(from, to),
+        );
+        out.push(...rows);
+      }
+      return out;
+    },
   });
 }
 
@@ -134,7 +157,13 @@ export function useDiemTuan(weeks = 8) {
     queryKey: ["diem_tuan", weeks],
     queryFn: () =>
       fetchAll<DiemTuan>((from, to) =>
-        supabase.from("tk_diem_tuan").select("*").gte("tuan", isoNgayTruoc(weeks * 7)).order("tuan").range(from, to),
+        supabase
+          .from("tk_diem_tuan")
+          .select("*")
+          .gte("tuan", isoNgayTruoc(weeks * 7))
+          .order("tuan")
+          .order("kenh_id")
+          .range(from, to),
       ),
   });
 }
@@ -155,14 +184,15 @@ export function useSyncLog(limitN = 20) {
 }
 
 // Video toàn hệ thống (n ngày gần nhất) kèm tên kênh — cho Video Explorer.
-export function useVideoExplorer(days = 30, limitN = 500) {
+export function useVideoExplorer(days = 30, limitN = 300) {
   return useQuery({
     queryKey: ["video_explorer", days, limitN],
     queryFn: async (): Promise<VideoKenh[]> => {
       const { data, error } = await supabase
         .from("tk_video")
         .select("*, tk_kenh(username,khu_vuc,ma_ch)")
-        .gte("dang_luc", isoNgayTruoc(days))
+        // mốc 00:00 giờ VN (dang_luc là timestamptz UTC)
+        .gte("dang_luc", isoNgayTruoc(days) + "T00:00:00+07:00")
         .order("dang_luc", { ascending: false })
         .limit(limitN);
       if (error) throw error;

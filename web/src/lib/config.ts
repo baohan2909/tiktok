@@ -6,13 +6,13 @@
 export const SUPABASE_URL =
   import.meta.env.VITE_SUPABASE_URL ?? "https://dosfidaqatczisbjtpls.supabase.co";
 
-// Khóa publishable (sb_publishable_...) hoặc anon (eyJ...) của project.
+// Khóa publishable (sb_publishable_...) — công khai, RLS bảo vệ dữ liệu.
 export const SUPABASE_ANON_KEY =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ?? "PASTE_ANON_OR_PUBLISHABLE_KEY";
+  import.meta.env.VITE_SUPABASE_ANON_KEY ?? "sb_publishable_oY8Nem8lceShAKKp00N1zg_uaEUaWc6";
 
 // Client key của TikTok app (ID công khai).
 export const TIKTOK_CLIENT_KEY =
-  import.meta.env.VITE_TIKTOK_CLIENT_KEY ?? "PASTE_TIKTOK_CLIENT_KEY";
+  import.meta.env.VITE_TIKTOK_CLIENT_KEY ?? "sbaw7f2glhuu5qvn6l";
 
 // Redirect URI đã đăng ký với TikTok (Edge Function oauth-callback).
 export const OAUTH_REDIRECT_URI = `${SUPABASE_URL}/functions/v1/oauth-callback`;

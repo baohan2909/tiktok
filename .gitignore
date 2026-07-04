@@ -1,0 +1,19 @@
+# Claude Code local
+.claude/
+
+# Node
+node_modules/
+web/node_modules/
+worker/node_modules/
+dist/
+web/dist/
+*.log
+
+# Env / secrets (không bao giờ commit)
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db

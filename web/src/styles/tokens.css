@@ -1,0 +1,62 @@
+/* ============================================================
+   NS TIKTOK COMMAND CENTER — Design tokens Nón Sơn
+   Nền obsidian/navy, accent gold + teal. KHÔNG tím, KHÔNG emoji.
+   Font: Space Grotesk (số/heading), Be Vietnam Pro (nội dung), JetBrains Mono (mã).
+   ============================================================ */
+:root {
+  /* Nền & bề mặt */
+  --bg: #0B1220;
+  --bg-2: #0E1626;
+  --card: #111A2E;
+  --line: #1E2A44;
+  --line-2: #26355A;
+
+  /* Chữ */
+  --ink: #E6EBF2;
+  --ink-2: #B9C4D4;
+  --mut: #8FA3BF;
+  --mut-2: #5C6E8A;
+
+  /* Accent */
+  --gold: #CBA45A;
+  --gold-soft: #E1C489;
+  --teal: #3FB6A8;
+  --teal-soft: #6FD0C4;
+
+  /* Trạng thái */
+  --ok: #3FB6A8;
+  --warn: #E0A94A;
+  --danger: #E5635B;
+  --info: #5B9BD5;
+
+  /* Fonts */
+  --f-head: "Space Grotesk", -apple-system, "Segoe UI", sans-serif;
+  --f-body: "Be Vietnam Pro", -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Bo góc & bóng */
+  --r-sm: 8px;
+  --r: 12px;
+  --r-lg: 18px;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, .num { font-family: var(--f-head); letter-spacing: 0.2px; }
+code, .mono { font-family: var(--f-mono); }
+
+a { color: var(--teal); text-decoration: none; }
+a:hover { color: var(--teal-soft); }
+
+::selection { background: rgba(203, 164, 90, 0.3); }

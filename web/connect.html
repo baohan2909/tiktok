@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kết nối TikTok — Non Son Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(1200px 600px at 50% -10%, #10203a 0%, transparent 60%),
+        var(--bg);
+    }
+    .wrap { width: 100%; max-width: 440px; }
+    .brand {
+      text-align: center;
+      font-family: var(--f-head);
+      font-weight: 700;
+      letter-spacing: 3px;
+      font-size: 0.78rem;
+      color: var(--gold);
+      margin-bottom: 14px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow);
+      padding: 30px 26px;
+    }
+    h1 { font-size: 1.35rem; margin: 0 0 6px; text-align: center; }
+    .sub { color: var(--mut); font-size: 0.92rem; text-align: center; margin: 0 0 18px; }
+    .chchip {
+      display: block;
+      margin: 0 auto 22px;
+      width: fit-content;
+      max-width: 100%;
+      padding: 7px 16px;
+      border: 1px solid var(--line-2);
+      border-radius: 999px;
+      color: var(--gold-soft);
+      font-family: var(--f-mono);
+      font-size: 0.9rem;
+    }
+    .steps { display: grid; gap: 14px; margin-bottom: 24px; }
+    .step { display: flex; gap: 13px; align-items: flex-start; }
+    .ico {
+      flex: 0 0 auto;
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--line-2);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--teal);
+      background: rgba(63, 182, 168, 0.06);
+    }
+    .step h3 { font-size: 0.95rem; margin: 2px 0 3px; font-family: var(--f-body); font-weight: 600; color: var(--ink); }
+    .step p { margin: 0; font-size: 0.86rem; color: var(--mut); line-height: 1.55; }
+    .btn {
+      width: 100%;
+      border: 0;
+      border-radius: var(--r);
+      padding: 15px 18px;
+      font-family: var(--f-head);
+      font-weight: 600;
+      font-size: 1.02rem;
+      color: #10203a;
+      background: linear-gradient(180deg, var(--gold-soft), var(--gold));
+      cursor: pointer;
+      transition: filter 0.15s ease, opacity 0.15s ease;
+    }
+    .btn:hover { filter: brightness(1.06); }
+    .btn:disabled { opacity: 0.6; cursor: default; }
+    .err {
+      display: none;
+      margin-top: 14px;
+      padding: 11px 13px;
+      border: 1px solid rgba(229, 99, 91, 0.4);
+      background: rgba(229, 99, 91, 0.08);
+      border-radius: var(--r-sm);
+      color: #f0a29c;
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+    .note {
+      margin-top: 18px;
+      font-size: 0.76rem;
+      color: var(--mut-2);
+      text-align: center;
+      line-height: 1.6;
+    }
+    .note a { color: var(--mut); text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">NON SON ANALYTICS</div>
+    <div class="card">
+      <h1>Kết nối kênh TikTok</h1>
+      <p class="sub">Liên kết tài khoản TikTok của cửa hàng với hệ thống.</p>
+      <span class="chchip" id="ch-chip">Cửa hàng: <span id="ch-label">—</span></span>
+
+      <div class="steps">
+        <div class="step">
+          <div class="ico">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+          </div>
+          <div>
+            <h3>1. Đăng nhập TikTok</h3>
+            <p>Bấm nút bên dưới, đăng nhập bằng tài khoản TikTok của cửa hàng.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="ico">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+          <div>
+            <h3>2. Đồng ý cấp quyền</h3>
+            <p>Chỉ cho phép xem số liệu công khai: người theo dõi, video, lượt xem. Không truy cập tin nhắn hay mật khẩu.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="ico">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+          </div>
+          <div>
+            <h3>3. Xong</h3>
+            <p>Hệ thống tự cập nhật số liệu 4 lần mỗi ngày, cửa hàng không phải làm gì thêm.</p>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn" id="btn-connect">Kết nối TikTok</button>
+      <div class="err" id="err"></div>
+
+      <p class="note">
+        Khi kết nối, bạn đồng ý với
+        <a href="./privacy.html">Chính sách bảo mật</a> và
+        <a href="./terms.html">Điều khoản</a> của Non Son Analytics.
+      </p>
+    </div>
+  </div>
+  <script type="module" src="/src/connect.ts"></script>
+</body>
+</html>

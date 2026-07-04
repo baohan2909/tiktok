@@ -1,0 +1,11 @@
+# Cấu hình tham chiếu cho Supabase CLI (nếu deploy bằng CLI về sau).
+# Nếu deploy bằng Dashboard, tắt "Verify JWT" tay ở phần Details của mỗi function.
+project_id = "dosfidaqatczisbjtpls"
+
+# oauth-callback: TikTok redirect tới đây (không có JWT) -> phải tắt verify.
+[functions.oauth-callback]
+verify_jwt = false
+
+# oauth-refresh: tự kiểm tra bearer == service role key trong code -> tắt verify gateway.
+[functions.oauth-refresh]
+verify_jwt = false

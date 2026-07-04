@@ -1,0 +1,34 @@
+name: sync
+
+on:
+  schedule:
+    # 06/12/18/22h VN = 23/05/11/15 UTC
+    - cron: "0 23,5,11,15 * * *"
+  workflow_dispatch: {}
+
+# Không chạy chồng nếu run trước chưa xong
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Cài dependency
+        working-directory: worker
+        run: npm install --no-audit --no-fund
+
+      - name: Chạy sync
+        working-directory: worker
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node sync.mjs

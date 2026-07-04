@@ -1,0 +1,10 @@
+{
+  "name": "ns-tiktok-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Worker thu thap snapshot TikTok cho NS Command Center (GitHub Actions)",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.58.0"
+  }
+}

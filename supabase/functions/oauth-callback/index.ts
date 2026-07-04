@@ -54,7 +54,9 @@ const ICON_OK = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" str
 const ICON_ERR = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#E5635B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
 
 function pageThanhCong(maCh: string, handle: string, avatar: string | null): Response {
-  const av = avatar ? `<img class="avatar" src="${avatar}" alt="">` : "";
+  // Chỉ nhận avatar là URL https và escape trước khi nhét vào src (chống XSS attribute-injection)
+  const safeAvatar = avatar && /^https:\/\//i.test(avatar) ? avatar : null;
+  const av = safeAvatar ? `<img class="avatar" src="${escapeHtml(safeAvatar)}" alt="">` : "";
   const hd = handle ? `<div class="handle">@${escapeHtml(handle)}</div>` : "";
   return trang(`
     <div class="badge">${ICON_OK}</div>

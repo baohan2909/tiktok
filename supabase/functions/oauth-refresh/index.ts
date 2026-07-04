@@ -58,13 +58,21 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      await sb.rpc("oauth_cap_nhat_token", {
+      const { error: upErr } = await sb.rpc("oauth_cap_nhat_token", {
         p_kenh_id: row.kenh_id,
         p_access_token: tok.access_token,
         p_access_expires_in: tok.expires_in ?? 86400,
         p_refresh_token: tok.refresh_token ?? null,
         p_refresh_expires_in: tok.refresh_expires_in ?? null,
       });
+      // Ghi token/Vault thất bại: TikTok có thể đã xoay refresh_token -> đánh dấu
+      // TOKEN_LOI để admin xử lý thay vì coi là thành công.
+      if (upErr) {
+        const m = ("cap nhat token loi: " + upErr.message).slice(0, 300);
+        await sb.rpc("oauth_bao_loi_token", { p_kenh_id: row.kenh_id, p_loi: m });
+        loi++; chi_tiet.push({ kenh_id: row.kenh_id, loi: m });
+        continue;
+      }
       ok++;
     } catch (e) {
       const m = String(e).slice(0, 300);

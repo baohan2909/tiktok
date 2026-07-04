@@ -1,0 +1,287 @@
+import { useEffect, useMemo } from "react";
+import type { EChartsOption } from "echarts";
+import {
+  useKenhs, useKenhSnapshots, useKenhVideos, useVideoSnapshots, useCanhBao,
+} from "../hooks/queries";
+import { EChart, CHART, AXIS_TEXT } from "../components/EChart";
+import {
+  SectionCard, EmptyState, Loading, DeltaText, MucDoBadge, TrangThaiKenh, Icon,
+} from "../components/ui";
+import { soVN, soGon, ngayGon, ngayDay, isoNgayTruoc, tinhER } from "../lib/format";
+import type { SnapshotVideo } from "../lib/types";
+
+const THANG_VN = ["Th1", "Th2", "Th3", "Th4", "Th5", "Th6", "Th7", "Th8", "Th9", "Th10", "Th11", "Th12"];
+
+function Sparkline({ data, w = 88, h = 26 }: { data: number[]; w?: number; h?: number }) {
+  if (data.length < 2) return <span className="spark-empty">—</span>;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const rng = max - min || 1;
+  const pts = data
+    .map((v, i) => {
+      const x = (i / (data.length - 1)) * (w - 2) + 1;
+      const y = h - 2 - ((v - min) / rng) * (h - 4);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  return (
+    <svg width={w} height={h} className="spark" aria-hidden="true">
+      <polyline points={pts} fill="none" stroke={CHART.teal} strokeWidth="1.5"
+        strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId: (id: number) => void }) {
+  const kenhs = useKenhs();
+  const list = kenhs.data ?? [];
+  const kenh = list.find((k) => k.id === kenhId);
+
+  const snaps = useKenhSnapshots(kenhId, 84);
+  const videos = useKenhVideos(kenhId);
+  const videoIds = (videos.data ?? []).map((v) => v.video_id);
+  const vsnaps = useVideoSnapshots(videoIds);
+  const canhBao = useCanhBao(kenhId);
+
+  // Tự chọn kênh đầu tiên nếu chưa chọn
+  useEffect(() => {
+    if (kenhId == null && list.length > 0) setKenhId(list[0].id);
+  }, [kenhId, list, setKenhId]);
+
+  // Gộp snapshot theo video
+  const perVideo = useMemo(() => {
+    const byVid = new Map<string, SnapshotVideo[]>();
+    for (const s of vsnaps.data ?? []) {
+      const arr = byVid.get(s.video_id) ?? [];
+      arr.push(s);
+      byVid.set(s.video_id, arr);
+    }
+    return (videos.data ?? [])
+      .map((v) => {
+        const ss = (byVid.get(v.video_id) ?? []).slice().sort((a, b) => (a.ngay < b.ngay ? -1 : 1));
+        const last = ss[ss.length - 1];
+        return {
+          v,
+          last,
+          er: tinhER(last?.luot_xem ?? null, last?.luot_thich ?? null, last?.binh_luan ?? null, last?.chia_se ?? null),
+          series: ss.map((x) => x.luot_xem ?? 0),
+        };
+      })
+      .sort((a, b) => (b.last?.luot_xem ?? 0) - (a.last?.luot_xem ?? 0));
+  }, [videos.data, vsnaps.data]);
+
+  // Chuỗi thời gian follower + view
+  const ts = useMemo(() => {
+    const fol = new Map<string, number>();
+    for (const s of snaps.data ?? []) if (s.follower != null) fol.set(s.ngay, s.follower);
+    const view = new Map<string, number>();
+    for (const s of vsnaps.data ?? []) view.set(s.ngay, (view.get(s.ngay) ?? 0) + (s.luot_xem ?? 0));
+    const dates = [...new Set([...fol.keys(), ...view.keys()])].sort();
+    return {
+      dates,
+      follower: dates.map((d) => fol.get(d) ?? null),
+      view: dates.map((d) => view.get(d) ?? null),
+    };
+  }, [snaps.data, vsnaps.data]);
+
+  // Heatmap lịch đăng (view theo ngày đăng)
+  const heat = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const pv of perVideo) {
+      const d = pv.v.dang_luc.slice(0, 10);
+      m.set(d, (m.get(d) ?? 0) + (pv.last?.luot_xem ?? 0));
+    }
+    return [...m.entries()].map(([d, v]) => [d, v] as [string, number]);
+  }, [perVideo]);
+
+  // Header stats
+  const arr = snaps.data ?? [];
+  const latestSnap = arr[arr.length - 1];
+  const follower = latestSnap?.follower ?? null;
+  const soVideo = latestSnap?.so_video ?? null;
+  const d7 = useMemo(() => {
+    if (arr.length < 2) return null;
+    const last = arr[arr.length - 1];
+    const cutoff = new Date(new Date(last.ngay).getTime() - 7 * 86400000).toISOString().slice(0, 10);
+    let base = arr[0];
+    for (const s of arr) {
+      if (s.ngay <= cutoff) base = s;
+      else break;
+    }
+    return (last.follower ?? 0) - (base.follower ?? 0);
+  }, [arr]);
+
+  const canhBaoKenh = (canhBao.data ?? []).filter((c) => c.trang_thai !== "DA_XU_LY");
+
+  // ----- Options chart -----
+  const tsOption: EChartsOption = {
+    grid: { left: 6, right: 6, top: 30, bottom: 6, containLabel: true },
+    legend: { data: ["Người theo dõi", "Lượt xem"], textStyle: { color: CHART.mut, fontSize: 11 }, top: 0, icon: "roundRect" },
+    tooltip: { trigger: "axis", backgroundColor: "#0E1626", borderColor: CHART.line, textStyle: { color: CHART.ink }, valueFormatter: (v) => soVN(v as number) },
+    xAxis: {
+      type: "category", data: ts.dates.map(ngayGon), boundaryGap: false,
+      axisLabel: { ...AXIS_TEXT }, axisLine: { lineStyle: { color: CHART.line } }, axisTick: { show: false },
+    },
+    yAxis: [
+      { type: "value", name: "Follower", nameTextStyle: { color: CHART.mut, fontSize: 10 }, axisLabel: { ...AXIS_TEXT, formatter: (v: number) => soGon(v) }, splitLine: { lineStyle: { color: CHART.grid } } },
+      { type: "value", name: "View", nameTextStyle: { color: CHART.mut, fontSize: 10 }, axisLabel: { ...AXIS_TEXT, formatter: (v: number) => soGon(v) }, splitLine: { show: false } },
+    ],
+    series: [
+      { name: "Người theo dõi", type: "line", yAxisIndex: 0, data: ts.follower, smooth: true, showSymbol: false, connectNulls: true, lineStyle: { color: CHART.gold, width: 2.2 } },
+      { name: "Lượt xem", type: "line", yAxisIndex: 1, data: ts.view, smooth: true, showSymbol: false, connectNulls: true, lineStyle: { color: CHART.teal, width: 2.2 } },
+    ],
+  };
+
+  const maxHeat = Math.max(1, ...heat.map((h) => h[1]));
+  const heatOption: EChartsOption = {
+    tooltip: {
+      backgroundColor: "#0E1626", borderColor: CHART.line, textStyle: { color: CHART.ink },
+      formatter: (p: unknown) => {
+        const v = (p as { value: [string, number] }).value;
+        return `${ngayDay(v[0])}: ${soGon(v[1])} view`;
+      },
+    },
+    visualMap: {
+      min: 0, max: maxHeat, calculable: false, orient: "horizontal", left: "center", bottom: 0,
+      inRange: { color: ["#152036", CHART.teal, CHART.gold] }, textStyle: { color: CHART.mut, fontSize: 10 },
+    },
+    calendar: {
+      top: 14, left: 24, right: 12, bottom: 40, cellSize: ["auto", 13],
+      range: [isoNgayTruoc(90), isoNgayTruoc(0)],
+      itemStyle: { color: "#0E1626", borderColor: CHART.line, borderWidth: 1 },
+      splitLine: { show: false }, yearLabel: { show: false },
+      dayLabel: { color: CHART.mut, fontSize: 9, firstDay: 1, nameMap: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"] },
+      monthLabel: { color: CHART.mut, fontSize: 10, nameMap: THANG_VN },
+    },
+    series: [{ type: "heatmap", coordinateSystem: "calendar", data: heat }],
+  };
+
+  // ----- Render -----
+  if (kenhs.isLoading) return <Loading />;
+  if (list.length === 0) {
+    return (
+      <div className="screen">
+        <EmptyState icon="link" title="Chưa có kênh nào kết nối"
+          hint="Gửi link /connect?ch=MÃ_CH cho cửa hàng để kết nối kênh TikTok đầu tiên." />
+      </div>
+    );
+  }
+
+  return (
+    <div className="screen">
+      {/* Chọn kênh + header */}
+      <SectionCard
+        title="Kênh"
+        icon="grid"
+        right={
+          <select className="select" value={kenhId ?? ""} onChange={(e) => setKenhId(Number(e.target.value))}>
+            {list.map((k) => (
+              <option key={k.id} value={k.id}>
+                {k.username ? "@" + k.username : k.ma_ch} — {k.ma_ch}
+              </option>
+            ))}
+          </select>
+        }
+      >
+        {kenh && (
+          <div className="kenh-head">
+            <div className="kenh-id">
+              <div className="kenh-handle">{kenh.username ? "@" + kenh.username : kenh.ma_ch}</div>
+              <div className="kenh-meta">
+                <span className="mono">{kenh.ma_ch}</span>
+                {kenh.khu_vuc && <span> · {kenh.khu_vuc}</span>}
+                <TrangThaiKenh tt={kenh.trang_thai} />
+              </div>
+            </div>
+            <div className="kenh-stats">
+              <div className="kstat">
+                <div className="kstat-v">{soVN(follower)}</div>
+                <div className="kstat-l">Người theo dõi <DeltaText n={d7} /></div>
+              </div>
+              <div className="kstat">
+                <div className="kstat-v">{soVN(soVideo)}</div>
+                <div className="kstat-l">Video</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Chuỗi thời gian */}
+      <SectionCard title="Follower & Lượt xem (12 tuần)" icon="chart">
+        {snaps.isLoading || vsnaps.isLoading ? (
+          <Loading />
+        ) : ts.dates.length === 0 ? (
+          <EmptyState title="Chưa có số liệu" hint="Chờ worker sync lần đầu cho kênh này." />
+        ) : (
+          <EChart option={tsOption} height={260} />
+        )}
+      </SectionCard>
+
+      {/* Heatmap lịch đăng */}
+      <SectionCard title="Lịch đăng (đậm theo lượt xem)" icon="grid">
+        {heat.length === 0 ? (
+          <EmptyState title="Chưa có video" />
+        ) : (
+          <EChart option={heatOption} height={200} />
+        )}
+      </SectionCard>
+
+      {/* Bảng video */}
+      <SectionCard title={`Video (${perVideo.length})`} icon="video">
+        {videos.isLoading ? (
+          <Loading />
+        ) : perVideo.length === 0 ? (
+          <EmptyState icon="video" title="Chưa có video" />
+        ) : (
+          <div className="tbl-wrap">
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>Video</th>
+                  <th>Đăng</th>
+                  <th className="r">Xem</th>
+                  <th className="r">ER</th>
+                  <th>Vòng đời</th>
+                </tr>
+              </thead>
+              <tbody>
+                {perVideo.slice(0, 30).map((pv) => (
+                  <tr key={pv.v.video_id}>
+                    <td className="v-title">
+                      {pv.v.nhan && <span className="nhan">{pv.v.nhan}</span>}
+                      <span className="v-txt">{pv.v.tieu_de || pv.v.mo_ta || pv.v.video_id}</span>
+                    </td>
+                    <td className="mut nowrap">{ngayDay(pv.v.dang_luc)}</td>
+                    <td className="r">{soGon(pv.last?.luot_xem)}</td>
+                    <td className="r">{pv.er == null ? "—" : pv.er.toFixed(1) + "%"}</td>
+                    <td><Sparkline data={pv.series} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Cảnh báo riêng kênh */}
+      {canhBaoKenh.length > 0 && (
+        <SectionCard title="Cảnh báo của kênh" icon="bell">
+          <div className="alerts">
+            {canhBaoKenh.slice(0, 8).map((c) => (
+              <div key={c.id} className="alert-row static">
+                <MucDoBadge mucDo={c.muc_do} />
+                <span className="alert-noidung">{c.noi_dung ?? c.loai}</span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
+      <div className="note-p1">
+        <Icon name="grid" size={14} />
+        Radar 5 trụ, phân tích cắt lớp theo nhãn/khung giờ, lịch sử live sẽ có ở Phase 1.
+      </div>
+    </div>
+  );
+}

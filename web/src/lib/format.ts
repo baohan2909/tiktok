@@ -26,12 +26,15 @@ export function ngayGon(d: string): string {
   return p.length === 3 ? `${p[2]}/${p[1]}` : d;
 }
 
-// ISO -> DD/MM/YYYY
+// ISO -> YYYY-MM-DD theo giờ VN (dùng cho key ngày, heatmap)
+export function ngayISO_VN(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+}
+
+// ISO -> DD/MM/YYYY theo giờ VN (không lệ thuộc múi giờ máy khách)
 export function ngayDay(iso: string): string {
-  const dt = new Date(iso);
-  const dd = String(dt.getDate()).padStart(2, "0");
-  const mm = String(dt.getMonth() + 1).padStart(2, "0");
-  return `${dd}/${mm}/${dt.getFullYear()}`;
+  const p = ngayISO_VN(iso).split("-");
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
 }
 
 // YYYY-MM-DD của N ngày trước (giờ VN).

@@ -21,7 +21,8 @@ const VIDEO_FIELDS =
   "id,create_time,title,video_description,duration,cover_image_url,share_url,view_count,like_count,comment_count,share_count";
 const VIDEO_LIST = "https://open.tiktokapis.com/v2/video/list/?fields=" + VIDEO_FIELDS;
 
-const MAX_PAGES = 3;        // ~60 video gần nhất mỗi kênh
+const MAX_PAGES = 10;       // trần an toàn ~200 video/kênh
+const CUA_SO_NGAY = 35;     // theo dõi video đăng trong ~35 ngày gần nhất
 const CONCURRENCY = 8;      // tôn trọng rate-limit TikTok
 
 // Ngày theo giờ VN (YYYY-MM-DD)
@@ -58,17 +59,24 @@ async function syncKenh(k, ngay) {
     if (laLoiToken(code)) throw { auth: true, msg: "user/info " + code };
     throw { auth: false, msg: "user/info: " + JSON.stringify(uJson?.error ?? uJson).slice(0, 200) };
   }
-  await sb.from("tk_snapshot_kenh").upsert({
+  // Thiếu scope user.info.stats: TikTok trả user chỉ có open_id, các *_count vắng.
+  // Không ghi snapshot NULL im lặng -> coi là lỗi để có cảnh báo.
+  if (u.follower_count == null) {
+    throw { auth: false, msg: "user/info thieu scope stats (khong co follower_count)" };
+  }
+  const e0 = (await sb.from("tk_snapshot_kenh").upsert({
     kenh_id: k.kenh_id,
     ngay,
     follower: u.follower_count ?? null,
     following: u.following_count ?? null,
     tong_like: u.likes_count ?? null,
     so_video: u.video_count ?? null,
-  }, { onConflict: "kenh_id,ngay" });
+  }, { onConflict: "kenh_id,ngay" })).error;
+  if (e0) throw { auth: false, msg: "upsert snapshot_kenh: " + e0.message };
 
-  // 2) video list (phân trang cursor)
+  // 2) video list (phân trang cursor tới khi ra ngoài cửa sổ theo dõi)
   const videos = [];
+  const gioiHanCreate = Math.floor(Date.now() / 1000) - CUA_SO_NGAY * 86400;
   let cursor, page = 0;
   while (page < MAX_PAGES) {
     const body = { max_count: 20 };
@@ -84,12 +92,17 @@ async function syncKenh(k, ngay) {
     if (!Array.isArray(list)) {
       const code = vJson?.error?.code;
       if (laLoiToken(code)) throw { auth: true, msg: "video/list " + code };
-      break; // kênh chưa có video hoặc lỗi lành tính -> dừng trang
+      // error.code khác 'ok' = lỗi tạm thời (rate_limit/internal...) -> tính là lỗi, không nuốt
+      if (code && code !== "ok") throw { auth: false, msg: "video/list " + code };
+      break; // thật sự không có video (data.videos = [])
     }
     videos.push(...list);
     cursor = vJson.data.cursor;
     page++;
-    if (!vJson.data.has_more) break;
+    // dừng khi hết trang, hoặc video cũ nhất trang này đã ra ngoài cửa sổ theo dõi
+    const minCreate = list.reduce((m, v) => Math.min(m, v.create_time ?? Infinity), Infinity);
+    if (!vJson.data.has_more || minCreate < gioiHanCreate) break;
+    if (page === MAX_PAGES) console.log(`  (kenh ${k.kenh_id}: cham tran ${MAX_PAGES} trang video)`);
   }
 
   // 3) upsert video + snapshot video

@@ -10,6 +10,22 @@ import type {
   CanhBao,
 } from "../lib/types";
 
+// Lấy HẾT dòng, vượt trần mặc định ~1000 của PostgREST bằng cách lặp .range().
+async function fetchAll<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<T[]> {
+  const SIZE = 1000;
+  const out: T[] = [];
+  for (let from = 0; ; from += SIZE) {
+    const { data, error } = await page(from, from + SIZE - 1);
+    if (error) throw error;
+    const rows = data ?? [];
+    out.push(...rows);
+    if (rows.length < SIZE) break;
+  }
+  return out;
+}
+
 export function useKenhs() {
   return useQuery({
     queryKey: ["kenhs"],
@@ -24,29 +40,25 @@ export function useKenhs() {
 export function useSnapshotsKenh(days = 84) {
   return useQuery({
     queryKey: ["snapshots_kenh", days],
-    queryFn: async (): Promise<SnapshotKenh[]> => {
-      const { data, error } = await supabase
-        .from("tk_snapshot_kenh")
-        .select("*")
-        .gte("ngay", isoNgayTruoc(days))
-        .order("ngay");
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: () =>
+      fetchAll<SnapshotKenh>((from, to) =>
+        supabase
+          .from("tk_snapshot_kenh")
+          .select("*")
+          .gte("ngay", isoNgayTruoc(days))
+          .order("ngay")
+          .range(from, to),
+      ),
   });
 }
 
 export function useMetricsTuan(days = 7) {
   return useQuery({
     queryKey: ["metrics_tuan", days],
-    queryFn: async (): Promise<MetricNgay[]> => {
-      const { data, error } = await supabase
-        .from("tk_metric_ngay")
-        .select("*")
-        .gte("ngay", isoNgayTruoc(days));
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: () =>
+      fetchAll<MetricNgay>((from, to) =>
+        supabase.from("tk_metric_ngay").select("*").gte("ngay", isoNgayTruoc(days)).range(from, to),
+      ),
   });
 }
 
@@ -71,16 +83,16 @@ export function useKenhSnapshots(kenhId: number | undefined, days = 84) {
   return useQuery({
     enabled: kenhId != null,
     queryKey: ["kenh_snaps", kenhId, days],
-    queryFn: async (): Promise<SnapshotKenh[]> => {
-      const { data, error } = await supabase
-        .from("tk_snapshot_kenh")
-        .select("*")
-        .eq("kenh_id", kenhId!)
-        .gte("ngay", isoNgayTruoc(days))
-        .order("ngay");
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: () =>
+      fetchAll<SnapshotKenh>((from, to) =>
+        supabase
+          .from("tk_snapshot_kenh")
+          .select("*")
+          .eq("kenh_id", kenhId!)
+          .gte("ngay", isoNgayTruoc(days))
+          .order("ngay")
+          .range(from, to),
+      ),
   });
 }
 
@@ -106,14 +118,9 @@ export function useVideoSnapshots(videoIds: string[]) {
   return useQuery({
     enabled: videoIds.length > 0,
     queryKey: ["video_snaps", key],
-    queryFn: async (): Promise<SnapshotVideo[]> => {
-      const { data, error } = await supabase
-        .from("tk_snapshot_video")
-        .select("*")
-        .in("video_id", videoIds)
-        .order("ngay");
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: () =>
+      fetchAll<SnapshotVideo>((from, to) =>
+        supabase.from("tk_snapshot_video").select("*").in("video_id", videoIds).order("ngay").range(from, to),
+      ),
   });
 }

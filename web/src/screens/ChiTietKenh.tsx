@@ -7,7 +7,7 @@ import { EChart, CHART, AXIS_TEXT } from "../components/EChart";
 import {
   SectionCard, EmptyState, Loading, DeltaText, MucDoBadge, TrangThaiKenh, Icon,
 } from "../components/ui";
-import { soVN, soGon, ngayGon, ngayDay, isoNgayTruoc, tinhER } from "../lib/format";
+import { soVN, soGon, ngayGon, ngayDay, ngayISO_VN, isoNgayTruoc, tinhER } from "../lib/format";
 import type { SnapshotVideo } from "../lib/types";
 
 const THANG_VN = ["Th1", "Th2", "Th3", "Th4", "Th5", "Th6", "Th7", "Th8", "Th9", "Th10", "Th11", "Th12"];
@@ -88,7 +88,7 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
   const heat = useMemo(() => {
     const m = new Map<string, number>();
     for (const pv of perVideo) {
-      const d = pv.v.dang_luc.slice(0, 10);
+      const d = ngayISO_VN(pv.v.dang_luc); // ngày đăng theo giờ VN (khớp range heatmap)
       m.set(d, (m.get(d) ?? 0) + (pv.last?.luot_xem ?? 0));
     }
     return [...m.entries()].map(([d, v]) => [d, v] as [string, number]);

@@ -133,7 +133,7 @@
 .note-p1 { display: flex; align-items: center; gap: 8px; color: var(--mut-2); font-size: 0.78rem; padding: 4px 2px; }
 .note-p1 svg { color: var(--mut-2); }
 
-/* ---- Tabs cuộn ngang trên mobile (6 tab) ---- */
+/* ---- Tabs cuộn ngang trên mobile (7 tab) ---- */
 .tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab { flex: 0 0 auto; white-space: nowrap; }
@@ -190,6 +190,24 @@
 .catlop-fill { height: 100%; background: var(--gold); }
 .catlop-fill.teal { background: var(--teal); }
 .catlop-v { width: 54px; flex: 0 0 auto; text-align: right; font-size: .82rem; color: var(--ink-2); }
+
+/* ---- Báo cáo tuần ---- */
+.bc-ky { color: var(--mut); font-size: .84rem; margin-bottom: 12px; }
+.bc-ky strong { color: var(--gold-soft); font-family: var(--f-head); }
+.bc-tomtat { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 14px; }
+.bc-tieude { font-family: var(--f-head); font-weight: 600; font-size: 1.02rem; color: var(--ink); margin-bottom: 10px; }
+.bc-bullets { margin: 0 0 4px; padding-left: 18px; display: grid; gap: 6px; }
+.bc-bullets li { color: var(--ink-2); font-size: .88rem; line-height: 1.5; }
+.bc-bullets.teal li::marker { color: var(--teal); }
+.bc-nhandinh { color: var(--ink-2); font-size: .9rem; line-height: 1.6; margin: 10px 0; }
+.bc-sub-h { color: var(--mut); font-size: .78rem; text-transform: uppercase; letter-spacing: .5px; margin: 12px 0 6px; }
+.bc-hangs { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.bc-hang { display: flex; align-items: center; gap: 8px; }
+.bc-hang-n { font-family: var(--f-head); font-weight: 700; font-size: 1.15rem; }
+.bc-hang-note { margin-left: auto; font-size: .82rem; }
+.bc-nhans { display: flex; gap: 10px; flex-wrap: wrap; }
+.bc-nhan { display: flex; align-items: center; gap: 7px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; }
+.bc-nhan-n { font-family: var(--f-head); font-weight: 700; font-size: .95rem; }
 
 /* ---- Desktop ---- */
 @media (min-width: 680px) {

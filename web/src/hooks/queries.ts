@@ -11,6 +11,7 @@ import type {
   DiemTuan,
   SyncLog,
   VideoKenh,
+  BaoCaoTuan,
 } from "../lib/types";
 
 // Lấy HẾT dòng, vượt trần mặc định ~1000 của PostgREST bằng cách lặp .range().
@@ -197,6 +198,22 @@ export function useVideoExplorer(days = 30, limitN = 300) {
         .limit(limitN);
       if (error) throw error;
       return (data ?? []) as unknown as VideoKenh[];
+    },
+  });
+}
+
+// Báo cáo tuần (mới -> cũ). Mỗi tuần 1 dòng, JSONB nhỏ — lấy vài tuần gần nhất.
+export function useBaoCaoTuan(limitN = 12) {
+  return useQuery({
+    queryKey: ["bao_cao_tuan", limitN],
+    queryFn: async (): Promise<BaoCaoTuan[]> => {
+      const { data, error } = await supabase
+        .from("tk_bao_cao_tuan")
+        .select("*")
+        .order("tuan", { ascending: false })
+        .limit(limitN);
+      if (error) throw error;
+      return (data ?? []) as unknown as BaoCaoTuan[];
     },
   });
 }

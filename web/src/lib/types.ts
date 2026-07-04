@@ -90,3 +90,50 @@ export interface SyncLog {
 export interface VideoKenh extends Video {
   tk_kenh: { username: string | null; khu_vuc: string | null; ma_ch: string } | null;
 }
+
+// ---- Báo cáo tuần (Phase 2) ----
+// du_lieu do SQL (RPC tk_tao_bao_cao_tuan) tính; tom_tat do Claude viết.
+export interface BaoCaoDuLieu {
+  ky: { tuan: string; tu: string; den: string; tuan_truoc: string };
+  he_thong: {
+    tong_follower: number;
+    follower_tang: number;
+    follower_tang_truoc: number;
+    video_moi: number;
+    video_moi_truoc: number;
+    view_tang: number;
+    view_tang_truoc: number;
+    thich_tang: number;
+    chiase_tang: number;
+    so_kenh_hoat_dong: number;
+  };
+  phan_hang: { A: number; B: number; C: number; D: number; tong: number };
+  top_kenh: {
+    kenh_id: number; ten: string; khu_vuc: string | null;
+    d_tong: number | null; hang: number | null; hang_truoc: number | null;
+  }[];
+  but_pha: { kenh_id: number; ten: string; hang: number; hang_truoc: number; tang: number }[];
+  video_noi_bat: {
+    video_id: string; kenh_id: number; ten_kenh: string;
+    tieu_de: string; nhan: string | null; share_url: string | null; view_tang: number;
+  }[];
+  ngung_dang: { kenh_id: number; ten: string; noi_dung: string | null }[];
+  canh_bao: { moi: number; khan: number; chu_y: number; thong_tin: number };
+  theo_nhan: Record<string, number>;
+  theo_khu_vuc: { khu_vuc: string; so_kenh: number; follower: number; diem_tb: number | null }[];
+}
+
+export interface BaoCaoTomTat {
+  tieu_de: string;
+  diem_nhan: string[];
+  nhan_dinh: string;
+  khuyen_nghi: string[];
+}
+
+export interface BaoCaoTuan {
+  tuan: string; // YYYY-MM-DD (thứ 2)
+  du_lieu: BaoCaoDuLieu;
+  tom_tat: BaoCaoTomTat | null;
+  tao_luc: string | null;
+  tom_tat_luc: string | null;
+}

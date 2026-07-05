@@ -91,6 +91,18 @@ export interface VideoKenh extends Video {
   tk_kenh: { username: string | null; khu_vuc: string | null; ma_ch: string } | null;
 }
 
+// Phiên live tự khai (Phase 3) — nuôi trụ Live của Health Score.
+export interface PhienLive {
+  id: number;
+  kenh_id: number;
+  ngay: string;             // YYYY-MM-DD
+  gio_bat_dau: string | null; // HH:MM[:SS]
+  thoi_luong_phut: number | null;
+  nguoi_xem_dinh: number | null;
+  ghi_chu: string | null;
+  nguon: string | null;     // TU_KHAI | (nguồn tự động sau này)
+}
+
 // ---- Báo cáo tuần (Phase 2) ----
 // du_lieu do SQL (RPC tk_tao_bao_cao_tuan) tính; tom_tat do Claude viết.
 export interface BaoCaoDuLieu {

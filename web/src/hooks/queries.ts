@@ -12,6 +12,7 @@ import type {
   SyncLog,
   VideoKenh,
   BaoCaoTuan,
+  PhienLive,
 } from "../lib/types";
 
 // Lấy HẾT dòng, vượt trần mặc định ~1000 của PostgREST bằng cách lặp .range().
@@ -221,5 +222,37 @@ export function useBaoCaoTuan(limitN = 12) {
 // Gạt trạng thái cảnh báo (anon được phép update trang_thai).
 export async function datTrangThaiCanhBao(id: number, trang_thai: string): Promise<void> {
   const { error } = await supabase.from("tk_canh_bao").update({ trang_thai }).eq("id", id);
+  if (error) throw error;
+}
+
+// Nhật ký live của 1 kênh (mới -> cũ).
+export function useKenhLive(kenhId: number | undefined) {
+  return useQuery({
+    enabled: kenhId != null,
+    queryKey: ["kenh_live", kenhId],
+    queryFn: async (): Promise<PhienLive[]> => {
+      const { data, error } = await supabase
+        .from("tk_phien_live")
+        .select("*")
+        .eq("kenh_id", kenhId!)
+        .order("ngay", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(60);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+// Thêm phiên live (anon được phép insert; nguon mặc định TU_KHAI ở DB).
+export async function themPhienLive(row: {
+  kenh_id: number;
+  ngay: string;
+  gio_bat_dau?: string | null;
+  thoi_luong_phut?: number | null;
+  nguoi_xem_dinh?: number | null;
+  ghi_chu?: string | null;
+}): Promise<void> {
+  const { error } = await supabase.from("tk_phien_live").insert(row);
   if (error) throw error;
 }

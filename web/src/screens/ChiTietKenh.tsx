@@ -7,6 +7,7 @@ import { EChart, CHART, AXIS_TEXT } from "../components/EChart";
 import {
   SectionCard, EmptyState, Loading, DeltaText, MucDoBadge, TrangThaiKenh, HangBadge, Sparkline, Icon,
 } from "../components/ui";
+import { NhatKyLive } from "../components/NhatKyLive";
 import { soVN, soGon, ngayGon, ngayDay, ngayISO_VN, isoNgayTruoc, tinhER } from "../lib/format";
 import type { SnapshotVideo, DiemTuan } from "../lib/types";
 
@@ -361,6 +362,9 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
         </SectionCard>
       )}
 
+      {/* Nhật ký Live (tự khai) — nuôi trụ Live */}
+      <NhatKyLive kenhId={kenhId} trangThai={kenh?.trang_thai} />
+
       {/* Cảnh báo riêng kênh */}
       {canhBaoKenh.length > 0 && (
         <SectionCard title="Cảnh báo của kênh" icon="bell">
@@ -377,7 +381,7 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
 
       <div className="note-p1">
         <Icon name="grid" size={14} />
-        Nhãn nội dung do Claude phân loại tự động + lịch sử live (form tự khai) sẽ bổ sung ở Phase 2.
+        Nhãn nội dung do Claude phân loại tự động. Nhật ký Live tự khai nuôi trụ Live của Health Score.
       </div>
     </div>
   );

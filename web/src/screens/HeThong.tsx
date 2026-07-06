@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useKenhs, useSyncLog, kichHoatSync } from "../hooks/queries";
+import { useMemo } from "react";
+import { useKenhs, useSyncLog } from "../hooks/queries";
 import { KpiCard, SectionCard, EmptyState, Loading, TrangThaiKenh, Icon } from "../components/ui";
 import { soVN } from "../lib/format";
 
@@ -15,36 +14,8 @@ function khiNao(iso: string | null): string {
 }
 
 export function HeThong() {
-  const qc = useQueryClient();
   const kenhs = useKenhs();
   const syncLog = useSyncLog(15);
-
-  const [dangChay, setDangChay] = useState(false);
-  const [thongBao, setThongBao] = useState<{ tone: "ok" | "loi"; text: string } | null>(null);
-
-  async function capNhat() {
-    setDangChay(true);
-    setThongBao(null);
-    try {
-      const kq = await kichHoatSync();
-      if (kq.ok) {
-        setThongBao({ tone: "ok", text: kq.thong_bao ?? "Đã kích hoạt. Chờ ~1–2 phút rồi bấm Tải lại." });
-      } else if (kq.ly_do === "cooldown") {
-        setThongBao({ tone: "loi", text: kq.thong_bao ?? "Vừa cập nhật gần đây, thử lại sau ~2 phút." });
-      } else {
-        setThongBao({ tone: "loi", text: "Chưa kích hoạt được: " + (kq.ly_do ?? "lỗi không rõ") });
-      }
-    } catch (e) {
-      setThongBao({ tone: "loi", text: "Lỗi kết nối: " + String((e as Error).message) });
-    } finally {
-      setDangChay(false);
-    }
-  }
-
-  async function taiLai() {
-    await qc.invalidateQueries();
-    setThongBao({ tone: "ok", text: "Đã tải lại số liệu mới nhất." });
-  }
 
   const dem = useMemo(() => {
     const list = kenhs.data ?? [];
@@ -76,23 +47,6 @@ export function HeThong() {
 
   return (
     <div className="screen">
-      {/* Cập nhật dữ liệu thủ công */}
-      <SectionCard title="Cập nhật dữ liệu" icon="refresh">
-        <div className="cn-row">
-          <div className="cn-info">
-            Kéo số liệu mới từ TikTok ngay, không cần chờ lịch tự động (06/12/18/22h).
-            <span className="mut"> Lần sync gần nhất: {khiNao(lanCuoi?.bat_dau ?? null)}.</span>
-          </div>
-          <div className="cn-btns">
-            <button className="btn-cn" onClick={capNhat} disabled={dangChay}>
-              <Icon name="refresh" size={15} /> {dangChay ? "Đang kích hoạt..." : "Cập nhật dữ liệu ngay"}
-            </button>
-            <button className="btn-mini" onClick={taiLai}>Tải lại</button>
-          </div>
-        </div>
-        {thongBao && <div className={thongBao.tone === "ok" ? "cn-ok" : "cn-loi"}>{thongBao.text}</div>}
-      </SectionCard>
-
       <div className="kpi-grid">
         <KpiCard icon="link" tone="teal" label="Đã kết nối" value={`${dem.hoatDong}/${dem.tong}`} />
         <KpiCard icon="link" label="Chưa kết nối" value={soVN(dem.chuaKetNoi)} />

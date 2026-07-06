@@ -8,6 +8,7 @@ import { BaoCao } from "./screens/BaoCao";
 import { PhanTich } from "./screens/PhanTich";
 import { HeThong } from "./screens/HeThong";
 import { Icon } from "./components/ui";
+import { NutCapNhat } from "./components/NutCapNhat";
 
 type Tab = "tong-quan" | "xep-hang" | "chi-tiet" | "video" | "phan-tich" | "canh-bao" | "bao-cao" | "he-thong";
 
@@ -34,12 +35,15 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">
-          <span className="brand-mark">NS</span>
-          <div>
-            <div className="brand-t">TikTok Command Center</div>
-            <div className="brand-s">Nón Sơn · Phase 1</div>
+        <div className="topbar-in">
+          <div className="brand">
+            <span className="brand-mark">NS</span>
+            <div>
+              <div className="brand-t">TikTok Command Center</div>
+              <div className="brand-s">Nón Sơn</div>
+            </div>
           </div>
+          <NutCapNhat />
         </div>
       </header>
 

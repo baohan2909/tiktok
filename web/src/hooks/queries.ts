@@ -258,6 +258,18 @@ export function usePtMaTran(days = 90) {
   });
 }
 
+// Bản ghi sync mới nhất (cho nút Cập nhật poll tới khi sync xong).
+export async function laySyncLogMoiNhat(): Promise<{
+  id: number; bat_dau: string | null; ket_thuc: string | null; so_kenh_ok: number | null;
+} | null> {
+  const { data } = await supabase
+    .from("tk_sync_log")
+    .select("id,bat_dau,ket_thuc,so_kenh_ok")
+    .order("id", { ascending: false })
+    .limit(1);
+  return data?.[0] ?? null;
+}
+
 // Kích hoạt sync thủ công qua Edge Function trigger-sync (dispatch workflow GitHub).
 // Luôn resolve về {ok,...} — kể cả khi mạng/CORS lỗi (không reject).
 export async function kichHoatSync(): Promise<{ ok: boolean; thong_bao?: string; ly_do?: string }> {

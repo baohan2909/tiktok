@@ -101,10 +101,19 @@ export interface PtHang {
 
 export interface PtYeuTo {
   so_video: number;
+  med_view_all: number; // baseline: view trung vị toàn hệ thống -> tính lift
   theo_nhan: PtHang[];
   theo_gio: PtHang[];
   theo_thu: PtHang[];
   theo_dodai: PtHang[];
+}
+
+// Một ô của ma trận nhãn × khung giờ (RPC pt_ma_tran).
+export interface PtMaTranCell {
+  nhan: string;
+  gio: number; // đầu bucket 3h: 0,3,6,...,21
+  n: number;
+  med_view: number;
 }
 
 export interface PtDnaNhom {

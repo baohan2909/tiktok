@@ -16,7 +16,9 @@ import type {
   PtDna,
   PtVideo,
   PtVideoRow,
+  PtMaTranCell,
 } from "../lib/types";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../lib/config";
 
 // Lấy HẾT dòng, vượt trần mặc định ~1000 của PostgREST bằng cách lặp .range().
 async function fetchAll<T>(
@@ -243,6 +245,31 @@ export function usePtVideoExplorer(days = 30, limitN = 400) {
       return (data ?? []) as PtVideoRow[];
     },
   });
+}
+
+export function usePtMaTran(days = 90) {
+  return useQuery({
+    queryKey: ["pt_ma_tran", days],
+    queryFn: async (): Promise<PtMaTranCell[]> => {
+      const { data, error } = await supabase.rpc("pt_ma_tran", { p_ngay: days });
+      if (error) throw error;
+      return (data ?? []) as PtMaTranCell[];
+    },
+  });
+}
+
+// Kích hoạt sync thủ công qua Edge Function trigger-sync (dispatch workflow GitHub).
+// Luôn resolve về {ok,...} — kể cả khi mạng/CORS lỗi (không reject).
+export async function kichHoatSync(): Promise<{ ok: boolean; thong_bao?: string; ly_do?: string }> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/trigger-sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY },
+    });
+    return await res.json();
+  } catch {
+    return { ok: false, ly_do: "khong ket noi duoc (kiem tra Edge Function trigger-sync)" };
+  }
 }
 
 export function usePtVideo(videoId: string | undefined) {

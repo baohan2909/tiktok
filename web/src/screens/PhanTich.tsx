@@ -1,14 +1,16 @@
 import { useMemo } from "react";
-import { usePtYeuTo, usePtDna } from "../hooks/queries";
+import { usePtYeuTo, usePtDna, usePtMaTran } from "../hooks/queries";
 import { SectionCard, EmptyState, Loading, HangBadge, Icon } from "../components/ui";
 import { soGon, soVN, NHAN_TEN, THU_TEN, ngayGon } from "../lib/format";
-import type { PtHang } from "../lib/types";
+import type { PtHang, PtMaTranCell } from "../lib/types";
 
 const N_TOI_THIEU = 3; // dưới ngưỡng này không rút kết luận
+const NHAN_THU_TU = ["REVIEW", "LIVE_CUT", "TREND", "BTS", "KHAC", "CHUA"];
+const GIO_BUCKETS = [0, 3, 6, 9, 12, 15, 18, 21];
 
 function nhanK(chieu: string, k: string | number): string {
   if (chieu === "nhan") return NHAN_TEN[String(k)] ?? String(k);
-  if (chieu === "gio") return `${String(k).padStart(2, "0")}–${String(Number(k) + 2).padStart(2, "0")}h`;
+  if (chieu === "gio") return `${String(k).padStart(2, "0")}–${String(Number(k) + 3).padStart(2, "0")}h`;
   if (chieu === "thu") return THU_TEN[Number(k)] ?? String(k);
   return String(k); // độ dài đã là nhãn sẵn
 }
@@ -34,17 +36,21 @@ function BangYeuTo({ chieu, tieuDe, rows }: { chieu: string; tieuDe: string; row
 export function PhanTich() {
   const yeuTo = usePtYeuTo(90);
   const dna = usePtDna();
+  const maTran = usePtMaTran(90);
 
-  // Gợi ý nhân rộng: đỉnh của mỗi chiều, chỉ nói khi n đủ lớn.
+  // Gợi ý nhân rộng: đỉnh của mỗi chiều, chỉ nói khi n đủ lớn. Kèm "lift" so mặt bằng.
   const goiY = useMemo(() => {
     const y = yeuTo.data;
     if (!y) return [];
     const out: string[] = [];
+    const base = y.med_view_all || 0;
     const dinh = (rows: PtHang[], chieu: string, ten: string) => {
       const du = rows.filter((r) => r.n >= N_TOI_THIEU);
       if (du.length < 2) return;
       const top = du.slice().sort((a, b) => b.med_view - a.med_view)[0];
-      out.push(`${ten} hiệu quả nhất: ${nhanK(chieu, top.k)} — view trung vị ${soGon(top.med_view)} (${top.n} video, ER ${top.er.toFixed(1)}%).`);
+      const lift = base > 0 ? top.med_view / base : 0;
+      const liftTxt = lift >= 1.15 ? ` — gấp ${lift.toFixed(1)} lần mặt bằng` : "";
+      out.push(`${ten} hiệu quả nhất: ${nhanK(chieu, top.k)} — view trung vị ${soGon(top.med_view)}${liftTxt} (${top.n} video, ER ${top.er.toFixed(1)}%).`);
     };
     dinh(y.theo_nhan, "nhan", "Nhãn nội dung");
     dinh(y.theo_gio, "gio", "Khung giờ đăng");
@@ -57,8 +63,28 @@ export function PhanTich() {
     if (a && day && a.so_kenh > 0 && day.so_kenh > 0) {
       out.push(`Nhóm A đăng ${a.video_tuan} video/tuần và live ${a.live_gio_tuan} giờ/tuần — nhóm D chỉ ${day.video_tuan} video/tuần, ${day.live_gio_tuan} giờ live. Kỷ luật đăng + live là khác biệt lớn nhất.`);
     }
+
+    // Ô tốt nhất của ma trận (đủ mẫu) — combo nội dung × giờ.
+    const cells = (maTran.data ?? []).filter((c) => c.n >= N_TOI_THIEU);
+    if (cells.length >= 2) {
+      const best = cells.slice().sort((x, y2) => y2.med_view - x.med_view)[0];
+      out.push(`Combo tốt nhất: ${NHAN_TEN[best.nhan] ?? best.nhan} đăng ${String(best.gio).padStart(2, "0")}–${String(best.gio + 3).padStart(2, "0")}h — view trung vị ${soGon(best.med_view)} (${best.n} video).`);
+    }
     return out;
-  }, [yeuTo.data, dna.data]);
+  }, [yeuTo.data, dna.data, maTran.data]);
+
+  // Ma trận Nhãn × Khung giờ: map tra cứu + max để tô màu.
+  const mt = useMemo(() => {
+    const map = new Map<string, PtMaTranCell>();
+    let max = 1;
+    const nhanCo = new Set<string>();
+    for (const c of maTran.data ?? []) {
+      map.set(c.nhan + ":" + c.gio, c);
+      if (c.med_view > max) max = c.med_view;
+      nhanCo.add(c.nhan);
+    }
+    return { map, max, nhanRows: NHAN_THU_TU.filter((n) => nhanCo.has(n)) };
+  }, [maTran.data]);
 
   if (yeuTo.isLoading) return <Loading />;
 
@@ -106,6 +132,49 @@ export function PhanTich() {
             <BangYeuTo chieu="dodai" tieuDe="Theo độ dài video" rows={y!.theo_dodai} />
           </div>
         )}
+      </SectionCard>
+
+      {/* Ma trận Nhãn × Khung giờ */}
+      <SectionCard title="Ma trận Nhãn × Khung giờ — view trung vị" icon="grid">
+        {maTran.error ? (
+          <EmptyState title="Chưa bật ma trận"
+            hint="Chạy migration 008_phan_tich.sql bản mới (có hàm pt_ma_tran) trên Supabase." />
+        ) : mt.nhanRows.length === 0 ? (
+          <EmptyState title="Chưa đủ dữ liệu cho ma trận"
+            hint="Cần video có nhãn (Claude phân loại) + snapshot để dựng ma trận nội dung × giờ." />
+        ) : (
+          <div className="mt-wrap">
+            <table className="mt-tbl">
+              <thead>
+                <tr>
+                  <th></th>
+                  {GIO_BUCKETS.map((g) => (<th key={g}>{String(g).padStart(2, "0")}h</th>))}
+                </tr>
+              </thead>
+              <tbody>
+                {mt.nhanRows.map((n) => (
+                  <tr key={n}>
+                    <td className="mt-rk">{NHAN_TEN[n] ?? n}</td>
+                    {GIO_BUCKETS.map((g) => {
+                      const c = mt.map.get(n + ":" + g);
+                      return (
+                        <td
+                          key={g}
+                          className="mt-cell"
+                          style={c ? { background: `rgba(63,182,168,${(0.06 + 0.5 * (c.med_view / mt.max)).toFixed(2)})` } : undefined}
+                          title={c ? `${NHAN_TEN[n] ?? n} · ${String(g).padStart(2, "0")}–${String(g + 3).padStart(2, "0")}h: ${soGon(c.med_view)} view (${c.n} video)` : "chưa có video"}
+                        >
+                          {c ? soGon(c.med_view) : ""}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="mt-note mut">Ô càng đậm = view trung vị càng cao. Rê chuột xem số video. Trả lời "đăng loại gì, vào giờ nào".</div>
       </SectionCard>
 
       {/* DNA nhóm hạng */}

@@ -26,6 +26,15 @@ const TRU = [
   { key: "d_live", ten: "Live", max: 15 },
 ] as const;
 
+// Gợi ý hành động theo trụ yếu nhất (khoảng cách tới mặt bằng hệ thống lớn nhất).
+const TRU_TIP: Record<string, string> = {
+  d_chuyencan: "đăng đều tay hơn, giữ nhịp mỗi tuần (tránh để trống nhiều ngày liền)",
+  d_noidung: "bám mẫu video đang thắng ở tab Phân tích (nhãn + khung giờ hiệu quả nhất)",
+  d_tangtruong: "tối ưu 3 giây đầu + hashtag xu hướng để kéo người theo dõi mới",
+  d_hitrate: "nhân rộng chủ đề đã có video vượt trội của chính kênh",
+  d_live: "tăng giờ live mỗi tuần (khai ở Nhật ký Live bên dưới)",
+};
+
 export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId: (id: number) => void }) {
   const kenhs = useKenhs();
   const list = kenhs.data ?? [];
@@ -101,12 +110,21 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
     const me = kenhId != null ? latest.get(kenhId) : undefined;
     const avg = (key: string) =>
       all.length ? all.reduce((a, d) => a + Number((d as unknown as Record<string, number>)[key] ?? 0), 0) / all.length : 0;
-    return {
-      co: !!me,
-      d_tong: me?.d_tong ?? null,
-      me: TRU.map((t) => Number((me as unknown as Record<string, number>)?.[t.key] ?? 0)),
-      sys: TRU.map((t) => Math.round(avg(t.key) * 10) / 10),
-    };
+    const meVals = TRU.map((t) => Number((me as unknown as Record<string, number>)?.[t.key] ?? 0));
+    const sysVals = TRU.map((t) => Math.round(avg(t.key) * 10) / 10);
+    // Trụ yếu nhất = khoảng cách tới mặt bằng hệ thống lớn nhất (ưu tiên cải thiện).
+    let yeu: { key: string; ten: string; max: number; me: number; sys: number } | null = null;
+    if (me) {
+      let gapMax = -Infinity, idx = -1;
+      TRU.forEach((_t, i) => {
+        const gap = sysVals[i] - meVals[i];
+        if (gap > gapMax) { gapMax = gap; idx = i; }
+      });
+      if (idx >= 0 && gapMax > 0.5) {
+        yeu = { key: TRU[idx].key, ten: TRU[idx].ten, max: TRU[idx].max, me: Math.round(meVals[idx] * 10) / 10, sys: sysVals[idx] };
+      }
+    }
+    return { co: !!me, d_tong: me?.d_tong ?? null, me: meVals, sys: sysVals, yeu };
   }, [diem.data, kenhId]);
 
   // Phân tích cắt lớp: view trung vị theo nhãn / khung giờ đăng (giờ VN)
@@ -275,7 +293,18 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
         {!radar.co ? (
           <EmptyState title="Chưa có Health Score" hint="Chạy 006_metrics.sql và chờ cron 02:15 (cần nhiều kênh để so sánh)." />
         ) : (
-          <EChart option={radarOption} height={300} />
+          <>
+            <EChart option={radarOption} height={300} />
+            {radar.yeu && (
+              <div className="uu-tien">
+                <Icon name="bulb" size={15} />
+                <span>
+                  Ưu tiên cải thiện: <strong>{radar.yeu.ten}</strong>
+                  <span className="mut"> (kênh {radar.yeu.me}/{radar.yeu.max}, mặt bằng {radar.yeu.sys})</span> — {TRU_TIP[radar.yeu.key]}.
+                </span>
+              </div>
+            )}
+          </>
         )}
       </SectionCard>
 

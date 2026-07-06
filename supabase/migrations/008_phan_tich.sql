@@ -21,7 +21,8 @@ as $$
 with vid as (
   select
     coalesce(v.nhan, 'CHUA') as nhan,
-    (extract(hour from (v.dang_luc at time zone 'Asia/Ho_Chi_Minh'))::int / 2) * 2 as gio2,
+    -- bucket 3h (0,3,...,21) — đồng nhất với ma trận pt_ma_tran.
+    (extract(hour from (v.dang_luc at time zone 'Asia/Ho_Chi_Minh'))::int / 3) * 3 as gio2,
     extract(isodow from (v.dang_luc at time zone 'Asia/Ho_Chi_Minh'))::int as thu,
     case
       when v.thoi_luong_s is null then null
@@ -45,6 +46,8 @@ with vid as (
 )
 select jsonb_build_object(
   'so_video', (select count(*) from vid),
+  -- baseline: view trung vị toàn hệ thống trong cửa sổ -> frontend tính "lift" (gấp mấy lần).
+  'med_view_all', coalesce((select round((percentile_cont(0.5) within group (order by luot_xem))::numeric, 0) from vid), 0),
   'theo_nhan', coalesce((
     select jsonb_agg(x) from (
       select jsonb_build_object(
@@ -345,3 +348,40 @@ as $$
 $$;
 revoke all on function pt_video_explorer(int, int) from public;
 grant execute on function pt_video_explorer(int, int) to anon, service_role;
+
+-- ------------------------------------------------------------
+-- 5) pt_ma_tran: ma trận 2 chiều NHÃN × KHUNG GIỜ (bucket 3h) — hiệu ứng tương
+--    tác (nội dung nào ĐĂNG GIỜ NÀO cho view cao nhất), sâu hơn phân tích 1 chiều.
+--    Mỗi ô: số video + view trung vị. Chỉ đọc, anon gọi được.
+-- ------------------------------------------------------------
+create or replace function pt_ma_tran(p_ngay int default 90)
+returns jsonb
+language sql
+stable
+set search_path = public
+as $$
+with vid as (
+  select coalesce(v.nhan, 'CHUA') as nhan,
+         (extract(hour from (v.dang_luc at time zone 'Asia/Ho_Chi_Minh'))::int / 3) * 3 as gio3,
+         sv.luot_xem
+  from tk_video v
+  join lateral (
+    select s.luot_xem from tk_snapshot_video s
+    where s.video_id = v.video_id order by s.ngay desc limit 1
+  ) sv on true
+  where (v.dang_luc at time zone 'Asia/Ho_Chi_Minh')::date
+          >= ((now() at time zone 'Asia/Ho_Chi_Minh')::date - p_ngay)
+    and sv.luot_xem is not null
+)
+select coalesce((
+  select jsonb_agg(x) from (
+    select jsonb_build_object(
+      'nhan', nhan, 'gio', gio3, 'n', count(*),
+      'med_view', round((percentile_cont(0.5) within group (order by luot_xem))::numeric, 0)
+    ) as x
+    from vid group by nhan, gio3
+  ) t
+), '[]'::jsonb);
+$$;
+revoke all on function pt_ma_tran(int) from public;
+grant execute on function pt_ma_tran(int) to anon, service_role;

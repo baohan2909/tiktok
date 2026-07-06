@@ -4,6 +4,8 @@ import { SectionCard, EmptyState, Loading, HangBadge, Sparkline, Icon } from "..
 import { soVN, capHang } from "../lib/format";
 import type { DiemTuan } from "../lib/types";
 
+type SortCot = "diem" | "follower" | "tenkenh";
+
 export function XepHang({ onChonKenh }: { onChonKenh: (id: number) => void }) {
   const kenhs = useKenhs();
   const diem = useDiemTuan(8);
@@ -11,6 +13,9 @@ export function XepHang({ onChonKenh }: { onChonKenh: (id: number) => void }) {
 
   const [loKhuVuc, setLoKhuVuc] = useState("");
   const [loHang, setLoHang] = useState("");
+  const [timKiem, setTimKiem] = useState("");
+  const [sortCot, setSortCot] = useState<SortCot>("diem");
+  const [sortTang, setSortTang] = useState(false); // false = giảm dần (mặc định)
 
   // Health Score mới nhất + tuần trước (mỗi kênh)
   const { latest, prev } = useMemo(() => {
@@ -49,12 +54,29 @@ export function XepHang({ onChonKenh }: { onChonKenh: (id: number) => void }) {
   );
 
   const rows = useMemo(() => {
+    const q = timKiem.trim().toLowerCase();
+    const folCuoi = (id: number) => {
+      const arr = folByKenh.get(id);
+      return arr?.length ? arr[arr.length - 1].f : -1;
+    };
+    const chieu = sortTang ? 1 : -1;
     return (kenhs.data ?? [])
       .map((k) => ({ k, d: latest.get(k.id), p: prev.get(k.id) }))
       .filter((r) => !loKhuVuc || r.k.khu_vuc === loKhuVuc)
       .filter((r) => !loHang || capHang(r.d?.d_tong) === loHang)
-      .sort((a, b) => (b.d?.d_tong ?? -1) - (a.d?.d_tong ?? -1));
-  }, [kenhs.data, latest, prev, loKhuVuc, loHang]);
+      .filter((r) => !q || `${r.k.username ?? ""} ${r.k.ma_ch} ${r.k.ten_ch}`.toLowerCase().includes(q))
+      .sort((a, b) => {
+        if (sortCot === "follower") return chieu * (folCuoi(a.k.id) - folCuoi(b.k.id));
+        if (sortCot === "tenkenh") return chieu * (a.k.username ?? a.k.ma_ch).localeCompare(b.k.username ?? b.k.ma_ch);
+        return chieu * ((a.d?.d_tong ?? -1) - (b.d?.d_tong ?? -1));
+      });
+  }, [kenhs.data, latest, prev, loKhuVuc, loHang, timKiem, sortCot, sortTang, folByKenh]);
+
+  function datSort(cot: SortCot) {
+    if (sortCot === cot) setSortTang((v) => !v);
+    else { setSortCot(cot); setSortTang(cot === "tenkenh"); } // tên: A→Z, số: giảm dần
+  }
+  const muiTen = (cot: SortCot) => (sortCot === cot ? (sortTang ? " ▲" : " ▼") : "");
 
   if (kenhs.isLoading || diem.isLoading) return <Loading />;
 
@@ -67,6 +89,10 @@ export function XepHang({ onChonKenh }: { onChonKenh: (id: number) => void }) {
         icon="chart"
         right={
           <div className="filters">
+            <input
+              className="inp sm vx-search" type="search" placeholder="Tìm kênh / mã CH..."
+              value={timKiem} onChange={(e) => setTimKiem(e.target.value)}
+            />
             <select className="select sm" value={loKhuVuc} onChange={(e) => setLoKhuVuc(e.target.value)}>
               <option value="">Mọi khu vực</option>
               {khuVucs.map((kv) => (<option key={kv} value={kv}>{kv}</option>))}
@@ -92,11 +118,11 @@ export function XepHang({ onChonKenh }: { onChonKenh: (id: number) => void }) {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Kênh</th>
+                  <th className="th-sort" onClick={() => datSort("tenkenh")}>Kênh{muiTen("tenkenh")}</th>
                   <th>Khu vực</th>
-                  <th className="r">Điểm</th>
+                  <th className="r th-sort" onClick={() => datSort("diem")}>Điểm{muiTen("diem")}</th>
                   <th>Hạng</th>
-                  <th>Follower 8t</th>
+                  <th className="th-sort" onClick={() => datSort("follower")}>Follower 8t{muiTen("follower")}</th>
                 </tr>
               </thead>
               <tbody>

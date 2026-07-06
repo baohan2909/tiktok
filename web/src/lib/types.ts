@@ -91,6 +91,80 @@ export interface VideoKenh extends Video {
   tk_kenh: { username: string | null; khu_vuc: string | null; ma_ch: string } | null;
 }
 
+// ---- Analytics Engine (Phase 4) — kết quả các RPC pt_* ----
+export interface PtHang {
+  k: string | number; // nhãn / giờ chẵn (bucket 2h) / thứ ISO 1-7 / bucket độ dài
+  n: number;
+  med_view: number;
+  er: number;
+}
+
+export interface PtYeuTo {
+  so_video: number;
+  theo_nhan: PtHang[];
+  theo_gio: PtHang[];
+  theo_thu: PtHang[];
+  theo_dodai: PtHang[];
+}
+
+export interface PtDnaNhom {
+  nhom: string; // A|B|C|D
+  so_kenh: number;
+  video_tuan: number;
+  med_view: number;
+  er: number;
+  live_gio_tuan: number;
+  tang_follower_pct: number | null;
+  nhan_mix: Record<string, number>;
+}
+
+export interface PtDna {
+  tuan: string;
+  nhom: PtDnaNhom[];
+}
+
+// Một dòng video trong kho explorer (RPC pt_video_explorer) — đã kèm view/ER.
+export interface PtVideoRow {
+  video_id: string;
+  kenh_id: number;
+  username: string | null;
+  khu_vuc: string | null;
+  ma_ch: string;
+  tieu_de: string | null;
+  mo_ta: string | null;
+  nhan: string | null;
+  dang_luc: string;
+  share_url: string | null;
+  xem: number | null;
+  thich: number | null;
+  binh_luan: number | null;
+  chia_se: number | null;
+  er: number | null;
+}
+
+export interface PtVideo {
+  video_id: string;
+  kenh_id: number;
+  ten_kenh: string;
+  nhan: string | null;
+  thoi_luong_s: number | null;
+  gio_dang: number;
+  thu_dang: number; // ISO 1=T2 .. 7=CN
+  xem: number | null;
+  thich: number | null;
+  binh_luan: number | null;
+  chia_se: number | null;
+  er: number | null;
+  kenh_med_view: number | null;
+  sys_med_view: number | null;
+  so_video_sosanh: number;
+  pct_view: number | null; // 0..1
+  er_kenh: number | null;
+  er_sys: number | null;
+  view_ngay_dau: number | null;
+  p95_ngay_dau: number | null;
+}
+
 // Phiên live tự khai (Phase 3) — nuôi trụ Live của Health Score.
 export interface PhienLive {
   id: number;

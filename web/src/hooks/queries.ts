@@ -10,9 +10,12 @@ import type {
   CanhBao,
   DiemTuan,
   SyncLog,
-  VideoKenh,
   BaoCaoTuan,
   PhienLive,
+  PtYeuTo,
+  PtDna,
+  PtVideo,
+  PtVideoRow,
 } from "../lib/types";
 
 // Lấy HẾT dòng, vượt trần mặc định ~1000 của PostgREST bằng cách lặp .range().
@@ -185,24 +188,6 @@ export function useSyncLog(limitN = 20) {
   });
 }
 
-// Video toàn hệ thống (n ngày gần nhất) kèm tên kênh — cho Video Explorer.
-export function useVideoExplorer(days = 30, limitN = 300) {
-  return useQuery({
-    queryKey: ["video_explorer", days, limitN],
-    queryFn: async (): Promise<VideoKenh[]> => {
-      const { data, error } = await supabase
-        .from("tk_video")
-        .select("*, tk_kenh(username,khu_vuc,ma_ch)")
-        // mốc 00:00 giờ VN (dang_luc là timestamptz UTC)
-        .gte("dang_luc", isoNgayTruoc(days) + "T00:00:00+07:00")
-        .order("dang_luc", { ascending: false })
-        .limit(limitN);
-      if (error) throw error;
-      return (data ?? []) as unknown as VideoKenh[];
-    },
-  });
-}
-
 // Báo cáo tuần (mới -> cũ). Mỗi tuần 1 dòng, JSONB nhỏ — lấy vài tuần gần nhất.
 export function useBaoCaoTuan(limitN = 12) {
   return useQuery({
@@ -223,6 +208,53 @@ export function useBaoCaoTuan(limitN = 12) {
 export async function datTrangThaiCanhBao(id: number, trang_thai: string): Promise<void> {
   const { error } = await supabase.from("tk_canh_bao").update({ trang_thai }).eq("id", id);
   if (error) throw error;
+}
+
+// ---- Analytics Engine (Phase 4) — gọi RPC pt_* tính trong Postgres ----
+export function usePtYeuTo(days = 90) {
+  return useQuery({
+    queryKey: ["pt_yeu_to", days],
+    queryFn: async (): Promise<PtYeuTo | null> => {
+      const { data, error } = await supabase.rpc("pt_yeu_to", { p_ngay: days });
+      if (error) throw error;
+      return (data ?? null) as PtYeuTo | null;
+    },
+  });
+}
+
+export function usePtDna() {
+  return useQuery({
+    queryKey: ["pt_dna"],
+    queryFn: async (): Promise<PtDna | null> => {
+      const { data, error } = await supabase.rpc("pt_dna");
+      if (error) throw error;
+      return (data ?? null) as PtDna | null;
+    },
+  });
+}
+
+// Kho video explorer — xếp theo view server-side (không giới hạn "300 bài mới nhất").
+export function usePtVideoExplorer(days = 30, limitN = 400) {
+  return useQuery({
+    queryKey: ["pt_video_explorer", days, limitN],
+    queryFn: async (): Promise<PtVideoRow[]> => {
+      const { data, error } = await supabase.rpc("pt_video_explorer", { p_ngay: days, p_limit: limitN });
+      if (error) throw error;
+      return (data ?? []) as PtVideoRow[];
+    },
+  });
+}
+
+export function usePtVideo(videoId: string | undefined) {
+  return useQuery({
+    enabled: !!videoId,
+    queryKey: ["pt_video", videoId],
+    queryFn: async (): Promise<PtVideo | null> => {
+      const { data, error } = await supabase.rpc("pt_video", { p_video_id: videoId });
+      if (error) throw error;
+      return (data ?? null) as PtVideo | null;
+    },
+  });
 }
 
 // Nhật ký live của 1 kênh (mới -> cũ).

@@ -52,6 +52,14 @@ export function capHang(dTong: number | null | undefined): "A" | "B" | "C" | "D"
   return "D";
 }
 
+// Tên hiển thị nhãn nội dung (Claude phân loại) — dùng chung các màn hình.
+export const NHAN_TEN: Record<string, string> = {
+  LIVE_CUT: "Cắt live", REVIEW: "Review", TREND: "Trend", BTS: "Hậu trường", KHAC: "Khác", CHUA: "Chưa gán",
+};
+
+// Thứ theo ISO (1=thứ 2 ... 7=chủ nhật).
+export const THU_TEN = ["", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"];
+
 // Engagement rate: (thích + 2·bình luận + 3·chia sẻ) / xem. Trả % (0–100).
 export function tinhER(
   xem: number | null,

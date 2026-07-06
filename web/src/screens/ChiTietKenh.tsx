@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { EChartsOption } from "echarts";
 import {
   useKenhs, useKenhSnapshots, useKenhVideos, useVideoSnapshots, useCanhBao, useDiemTuan,
@@ -8,6 +8,7 @@ import {
   SectionCard, EmptyState, Loading, DeltaText, MucDoBadge, TrangThaiKenh, HangBadge, Sparkline, Icon,
 } from "../components/ui";
 import { NhatKyLive } from "../components/NhatKyLive";
+import { GiaiPhauVideo, type VideoMo } from "../components/GiaiPhauVideo";
 import { soVN, soGon, ngayGon, ngayDay, ngayISO_VN, isoNgayTruoc, tinhER } from "../lib/format";
 import type { SnapshotVideo, DiemTuan } from "../lib/types";
 
@@ -36,6 +37,7 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
   const vsnaps = useVideoSnapshots(videoIds);
   const canhBao = useCanhBao(kenhId);
   const diem = useDiemTuan(8);
+  const [selVideo, setSelVideo] = useState<VideoMo | null>(null);
 
   // Tự chọn kênh đầu tiên nếu chưa chọn
   useEffect(() => {
@@ -317,7 +319,7 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
               </thead>
               <tbody>
                 {perVideo.slice(0, 30).map((pv) => (
-                  <tr key={pv.v.video_id}>
+                  <tr key={pv.v.video_id} className="clickable" onClick={() => setSelVideo(pv.v)}>
                     <td className="v-title">
                       {pv.v.nhan && <span className="nhan">{pv.v.nhan}</span>}
                       <span className="v-txt">{pv.v.tieu_de || pv.v.mo_ta || pv.v.video_id}</span>
@@ -381,8 +383,12 @@ export function ChiTietKenh({ kenhId, setKenhId }: { kenhId?: number; setKenhId:
 
       <div className="note-p1">
         <Icon name="grid" size={14} />
-        Nhãn nội dung do Claude phân loại tự động. Nhật ký Live tự khai nuôi trụ Live của Health Score.
+        Bấm một video để xem giải phẫu chi tiết. Nhãn do Claude phân loại; Nhật ký Live nuôi trụ Live.
       </div>
+
+      {selVideo && (
+        <GiaiPhauVideo video={selVideo} onClose={() => setSelVideo(null)} />
+      )}
     </div>
   );
 }

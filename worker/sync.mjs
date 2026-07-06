@@ -182,6 +182,21 @@ async function main() {
     chi_tiet_loi: chiTiet,
   });
 
+  // Hậu xử lý: tính lại metric ngày + điểm tuần + quét bất thường ngay sau khi thu
+  // thập, để dashboard (và nút "Cập nhật ngay") tươi liền, không phải chờ cron 02:xx.
+  // Lỗi ở bước này KHÔNG làm hỏng sync (dữ liệu thô đã ghi xong).
+  try {
+    // supabase-js KHÔNG throw khi RPC lỗi ở tầng DB — phải đọc .error từng lời gọi.
+    const r1 = await sb.rpc("tk_tinh_metric_ngay", { p_ngay: ngay });
+    const r2 = await sb.rpc("tk_tinh_diem_tuan", { p_ngay: ngay });
+    const r3 = await sb.rpc("tk_quet_bat_thuong", { p_ngay: ngay });
+    const errs = [r1.error, r2.error, r3.error].filter(Boolean).map((e) => e.message);
+    if (errs.length) console.error("Hau xu ly loi:", errs.join(" | ").slice(0, 300));
+    else console.log("Da tinh lai metric + diem tuan + quet bat thuong.");
+  } catch (e) {
+    console.error("Hau xu ly (mang) loi:", String(e?.message ?? e).slice(0, 200));
+  }
+
   console.log(`Xong: ${ok} OK, ${loi} loi.`);
   if (loi > 0 && ok === 0) process.exit(1); // toàn bộ fail -> đỏ workflow
 }

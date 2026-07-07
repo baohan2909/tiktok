@@ -52,6 +52,16 @@ export function capHang(dTong: number | null | undefined): "A" | "B" | "C" | "D"
   return "D";
 }
 
+// "x phút trước" theo giờ máy khách — cho chip dữ liệu + nhật ký sync.
+export function khiNao(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return `${s} giây trước`;
+  if (s < 3600) return `${Math.floor(s / 60)} phút trước`;
+  if (s < 86400) return `${Math.floor(s / 3600)} giờ trước`;
+  return `${Math.floor(s / 86400)} ngày trước`;
+}
+
 // Tên hiển thị nhãn nội dung (Claude phân loại) — dùng chung các màn hình.
 export const NHAN_TEN: Record<string, string> = {
   LIVE_CUT: "Cắt live", REVIEW: "Review", TREND: "Trend", BTS: "Hậu trường", KHAC: "Khác", CHUA: "Chưa gán",

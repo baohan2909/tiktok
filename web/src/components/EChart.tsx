@@ -23,8 +23,13 @@ export function EChart({ option, height = 280 }: { option: EChartsOption; height
     inst.current = echarts.init(el.current, undefined, { renderer: "canvas" });
     const onResize = () => inst.current?.resize();
     window.addEventListener("resize", onResize);
+    // Container có thể đổi bề rộng mà không có window resize (scrollbar xuất hiện,
+    // layout đổi) -> theo dõi trực tiếp phần tử.
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(onResize) : null;
+    if (ro) ro.observe(el.current);
     return () => {
       window.removeEventListener("resize", onResize);
+      ro?.disconnect();
       inst.current?.dispose();
       inst.current = null;
     };

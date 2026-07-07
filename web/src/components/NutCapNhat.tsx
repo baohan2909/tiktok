@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { kichHoatSync, laySyncLogMoiNhat } from "../hooks/queries";
 import { Icon } from "./ui";
@@ -72,7 +73,8 @@ export function NutCapNhat() {
         <span className={dangChay ? "spin" : ""}><Icon name="refresh" size={15} /></span>
         <span className="btn-capnhat-t">{nhan}</span>
       </button>
-      {msg && <div className={`cn-toast ${tt}`}>{msg}</div>}
+      {/* Portal ra body: topbar có backdrop-filter sẽ "nhốt" position:fixed của con */}
+      {msg && createPortal(<div className={`cn-toast ${tt}`}>{msg}</div>, document.body)}
     </>
   );
 }

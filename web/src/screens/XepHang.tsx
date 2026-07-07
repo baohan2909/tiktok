@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { useKenhs, useDiemTuan, useSnapshotsKenh } from "../hooks/queries";
-import { SectionCard, EmptyState, Loading, HangBadge, Sparkline, Icon } from "../components/ui";
+import { SectionCard, EmptyState, Loading, HangBadge, Sparkline, Icon, PinStar } from "../components/ui";
 import { soVN, capHang } from "../lib/format";
+import { layPins, togglePin } from "../lib/pins";
+import { taiCSV } from "../lib/csv";
 import type { DiemTuan } from "../lib/types";
 
 type SortCot = "diem" | "follower" | "tenkenh";
@@ -16,6 +18,7 @@ export function XepHang({ onChonKenh }: { onChonKenh: (id: number) => void }) {
   const [timKiem, setTimKiem] = useState("");
   const [sortCot, setSortCot] = useState<SortCot>("diem");
   const [sortTang, setSortTang] = useState(false); // false = giảm dần (mặc định)
+  const [pins, setPins] = useState<number[]>(() => layPins());
 
   // Health Score mới nhất + tuần trước (mỗi kênh)
   const { latest, prev } = useMemo(() => {
@@ -53,6 +56,11 @@ export function XepHang({ onChonKenh }: { onChonKenh: (id: number) => void }) {
     [kenhs.data],
   );
 
+  const folCuoi = (id: number) => {
+    const arr = folByKenh.get(id);
+    return arr?.length ? arr[arr.length - 1].f : -1;
+  };
+
   const rows = useMemo(() => {
     const q = timKiem.trim().toLowerCase();
     const folCuoi = (id: number) => {
@@ -78,6 +86,22 @@ export function XepHang({ onChonKenh }: { onChonKenh: (id: number) => void }) {
   }
   const muiTen = (cot: SortCot) => (sortCot === cot ? (sortTang ? " ▲" : " ▼") : "");
 
+  function xuatCSV() {
+    taiCSV(
+      `xep-hang-${new Date().toISOString().slice(0, 10)}.csv`,
+      ["#", "Kênh", "Mã CH", "Khu vực", "Điểm", "Hạng", "Follower"],
+      rows.map((r, i) => [
+        i + 1,
+        r.k.username ? "@" + r.k.username : r.k.ma_ch,
+        r.k.ma_ch,
+        r.k.khu_vuc ?? "",
+        r.d?.d_tong != null ? Number(r.d.d_tong).toFixed(0) : "",
+        capHang(r.d?.d_tong),
+        folCuoi(r.k.id) >= 0 ? folCuoi(r.k.id) : "",
+      ]),
+    );
+  }
+
   if (kenhs.isLoading || diem.isLoading) return <Loading />;
 
   const coDiem = (diem.data ?? []).length > 0;
@@ -101,6 +125,9 @@ export function XepHang({ onChonKenh }: { onChonKenh: (id: number) => void }) {
               <option value="">Mọi hạng</option>
               {["A", "B", "C", "D"].map((h) => (<option key={h} value={h}>Hạng {h}</option>))}
             </select>
+            <button className="btn-mini" onClick={xuatCSV} title="Tải bảng này về Excel">
+              <Icon name="download" size={13} /> CSV
+            </button>
           </div>
         }
       >
@@ -117,6 +144,7 @@ export function XepHang({ onChonKenh }: { onChonKenh: (id: number) => void }) {
             <table className="tbl">
               <thead>
                 <tr>
+                  <th></th>
                   <th>#</th>
                   <th className="th-sort" onClick={() => datSort("tenkenh")}>Kênh{muiTen("tenkenh")}</th>
                   <th>Khu vực</th>
@@ -130,6 +158,15 @@ export function XepHang({ onChonKenh }: { onChonKenh: (id: number) => void }) {
                   const bienDong = d?.hang != null && p?.hang != null ? p.hang - d.hang : 0;
                   return (
                     <tr key={k.id} className="clickable" onClick={() => onChonKenh(k.id)}>
+                      <td className="pin-td">
+                        <button
+                          className={pins.includes(k.id) ? "pin-btn on" : "pin-btn"}
+                          title={pins.includes(k.id) ? "Bỏ ghim theo dõi nhanh" : "Ghim vào Theo dõi nhanh (Tổng quan)"}
+                          onClick={(e) => { e.stopPropagation(); setPins(togglePin(k.id)); }}
+                        >
+                          <PinStar on={pins.includes(k.id)} />
+                        </button>
+                      </td>
                       <td className="mut nowrap">
                         {i + 1}
                         {bienDong > 0 && <span className="d-up"> ▲{bienDong}</span>}

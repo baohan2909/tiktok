@@ -1,18 +1,57 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { EChartsOption } from "echarts";
-import { useKenhs, useSnapshotsKenh, useMetricsTuan, useCanhBao } from "../hooks/queries";
+import { useKenhs, useSnapshotsKenh, useMetricsTuan, useCanhBao, useDiemTuan } from "../hooks/queries";
 import { EChart, CHART, AXIS_TEXT } from "../components/EChart";
 import {
-  KpiCard, DeltaText, SectionCard, EmptyState, Loading, MucDoBadge, Icon,
+  KpiCard, DeltaText, SectionCard, EmptyState, Loading, MucDoBadge, Icon, HangBadge, PinStar,
 } from "../components/ui";
 import { soVN, soGon, ngayGon } from "../lib/format";
-import type { SnapshotKenh } from "../lib/types";
+import { layPins } from "../lib/pins";
+import type { SnapshotKenh, DiemTuan } from "../lib/types";
 
 export function TongQuan({ onChonKenh }: { onChonKenh: (id: number) => void }) {
   const kenhs = useKenhs();
   const snaps = useSnapshotsKenh(84);
   const metrics = useMetricsTuan(7);
   const canhBao = useCanhBao();
+  const diem = useDiemTuan(2);
+  const [pins] = useState<number[]>(() => layPins());
+
+  // Thẻ "Theo dõi nhanh" cho các kênh đã ghim ở tab Xếp hạng.
+  const theoDoi = useMemo(() => {
+    if (!pins.length) return [];
+    const byKenh = new Map<number, SnapshotKenh[]>();
+    for (const s of snaps.data ?? []) {
+      const arr = byKenh.get(s.kenh_id) ?? [];
+      arr.push(s);
+      byKenh.set(s.kenh_id, arr);
+    }
+    const diemMoi = new Map<number, DiemTuan>();
+    for (const d of diem.data ?? []) {
+      const cur = diemMoi.get(d.kenh_id);
+      if (!cur || d.tuan > cur.tuan) diemMoi.set(d.kenh_id, d);
+    }
+    return pins
+      .map((id) => {
+        const k = (kenhs.data ?? []).find((x) => x.id === id);
+        if (!k) return null;
+        const arr = (byKenh.get(id) ?? []).slice().sort((a, b) => (a.ngay < b.ngay ? -1 : 1));
+        const cuoi = arr[arr.length - 1];
+        let truoc: SnapshotKenh | undefined;
+        if (cuoi) {
+          const moc = new Date(cuoi.ngay).getTime() - 7 * 86400000;
+          for (const s of arr) if (new Date(s.ngay).getTime() <= moc) truoc = s;
+        }
+        return {
+          id,
+          ten: k.username ? "@" + k.username : k.ma_ch,
+          follower: cuoi?.follower ?? null,
+          d7: cuoi?.follower != null && truoc?.follower != null ? cuoi.follower - truoc.follower : null,
+          d_tong: diemMoi.get(id)?.d_tong ?? null,
+        };
+      })
+      .filter(Boolean) as { id: number; ten: string; follower: number | null; d7: number | null; d_tong: number | null }[];
+  }, [pins, snaps.data, kenhs.data, diem.data]);
 
   const dat = useMemo(() => {
     const list = snaps.data ?? [];
@@ -123,6 +162,25 @@ export function TongQuan({ onChonKenh }: { onChonKenh: (id: number) => void }) {
         </SectionCard>
       )}
 
+      {/* Theo dõi nhanh (kênh đã ghim) */}
+      {theoDoi.length > 0 && (
+        <SectionCard title="Theo dõi nhanh" icon="users"
+          right={<span className="mut sm"><PinStar on size={13} /> ghim ở tab Xếp hạng</span>}>
+          <div className="pin-grid">
+            {theoDoi.map((p) => (
+              <button key={p.id} className="pin-card" onClick={() => onChonKenh(p.id)}>
+                <div className="pin-ten">{p.ten}</div>
+                <div className="pin-so">{soGon(p.follower)}</div>
+                <div className="pin-duoi">
+                  {p.d7 == null ? <span className="mut">— chưa đủ 7 ngày</span> : <><DeltaText n={p.d7} /> <span className="mut">7 ngày</span></>}
+                  <span className="pin-hang"><HangBadge d={p.d_tong} /></span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
       {/* 4 thẻ KPI */}
       <div className="kpi-grid">
         <KpiCard
@@ -159,10 +217,9 @@ export function TongQuan({ onChonKenh }: { onChonKenh: (id: number) => void }) {
         )}
       </SectionCard>
 
-      {/* Ghi chú Phase 1 */}
       <div className="note-p1">
         <Icon name="grid" size={14} />
-        Xếp hạng A/B/C/D, Health Score và phân bố theo khu vực sẽ có ở Phase 1.
+        Mẹo: nhấn Ctrl+K để tìm nhanh kênh; ghim kênh ở tab Xếp hạng để hiện Theo dõi nhanh tại đây.
       </div>
     </div>
   );

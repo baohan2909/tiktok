@@ -53,7 +53,30 @@ const ICONS = {
   doc: <><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" /><path d="M9 13h6" /><path d="M9 17h4" /></>,
   bulb: <><path d="M9 18h6" /><path d="M10 22h4" /><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2z" /></>,
   x: <><path d="M18 6 6 18" /><path d="m6 6 12 12" /></>,
+  search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>,
+  download: <><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></>,
 };
+
+// Sao ghim kênh: đặc khi đang ghim (fill riêng nên không dùng Icon stroke chung).
+export function PinStar({ on, size = 15 }: { on: boolean; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={on ? "currentColor" : "none"}
+      stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m12 2.5 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.3l-5.8 3.1 1.1-6.5L2.6 9.3l6.5-.9L12 2.5z" />
+    </svg>
+  );
+}
+
+// Khối shimmer cho trạng thái tải (thay chấm nhấp nháy đơn điệu).
+export function Skeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="skel-wrap" aria-hidden="true">
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="skel" style={{ width: `${100 - i * 12}%` }} />
+      ))}
+    </div>
+  );
+}
 
 // ---------- Trạng thái rỗng ----------
 export function EmptyState({ icon = "chart", title, hint }: { icon?: IconName; title: string; hint?: string }) {
@@ -66,8 +89,13 @@ export function EmptyState({ icon = "chart", title, hint }: { icon?: IconName; t
   );
 }
 
-export function Loading({ label = "Đang tải..." }: { label?: string }) {
-  return <div className="loading"><span className="dot" /> {label}</div>;
+export function Loading({ label = "Đang tải dữ liệu…" }: { label?: string }) {
+  return (
+    <div className="loading">
+      <Skeleton rows={4} />
+      <span className="loading-t"><span className="dot" /> {label}</span>
+    </div>
+  );
 }
 
 // ---------- Thẻ KPI ----------

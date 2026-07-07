@@ -1,17 +1,7 @@
 import { useMemo } from "react";
 import { useKenhs, useSyncLog } from "../hooks/queries";
 import { KpiCard, SectionCard, EmptyState, Loading, TrangThaiKenh, Icon } from "../components/ui";
-import { soVN } from "../lib/format";
-
-function khiNao(iso: string | null): string {
-  if (!iso) return "—";
-  const dt = new Date(iso);
-  const s = Math.floor((Date.now() - dt.getTime()) / 1000);
-  if (s < 60) return `${s} giây trước`;
-  if (s < 3600) return `${Math.floor(s / 60)} phút trước`;
-  if (s < 86400) return `${Math.floor(s / 3600)} giờ trước`;
-  return `${Math.floor(s / 86400)} ngày trước`;
-}
+import { soVN, khiNao } from "../lib/format";
 
 export function HeThong() {
   const kenhs = useKenhs();

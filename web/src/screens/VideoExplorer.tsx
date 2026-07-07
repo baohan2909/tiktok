@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { usePtVideoExplorer } from "../hooks/queries";
 import { SectionCard, EmptyState, Loading, Icon } from "../components/ui";
 import { soGon, ngayDay, NHAN_TEN } from "../lib/format";
+import { taiCSV } from "../lib/csv";
 import { GiaiPhauVideo, type VideoMo } from "../components/GiaiPhauVideo";
 
 type SortKey = "xem" | "er" | "moi" | "tocdo";
@@ -50,6 +51,20 @@ export function VideoExplorer({ onChonKenh }: { onChonKenh: (id: number) => void
       })
       .slice(0, 100);
   }, [vids.data, loKhuVuc, loNhan, minView, timKiem, sortKey]);
+
+  function xuatCSV() {
+    taiCSV(
+      `video-${khungNgay}ngay-${new Date().toISOString().slice(0, 10)}.csv`,
+      ["Kênh", "Mã CH", "Khu vực", "Tiêu đề", "Nhãn", "Đăng lúc", "Xem", "ER %", "Link"],
+      rows.map((v) => [
+        v.username ? "@" + v.username : String(v.kenh_id),
+        v.ma_ch, v.khu_vuc ?? "",
+        (v.tieu_de || v.mo_ta || "").slice(0, 150),
+        v.nhan ? (NHAN_TEN[v.nhan] ?? v.nhan) : "",
+        ngayDay(v.dang_luc), v.xem ?? "", v.er ?? "", v.share_url ?? "",
+      ]),
+    );
+  }
 
   if (vids.isLoading) return <Loading />;
   if (vids.error) {
@@ -101,6 +116,9 @@ export function VideoExplorer({ onChonKenh }: { onChonKenh: (id: number) => void
             <option value={10000}>≥ 10N</option>
             <option value={100000}>≥ 100N</option>
           </select>
+          <button className="btn-mini" onClick={xuatCSV} title="Tải danh sách đang lọc về Excel">
+            <Icon name="download" size={13} /> CSV
+          </button>
         </div>
 
         {(vids.data ?? []).length === 0 ? (

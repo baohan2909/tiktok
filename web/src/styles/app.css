@@ -453,6 +453,36 @@ body {
 *::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 99px; border: 2px solid var(--bg); }
 *::-webkit-scrollbar-track { background: transparent; }
 
+/* ---- In / Lưu PDF (nút In ở tab Báo cáo) ---- */
+.only-print { display: none; }
+@media print {
+  .side, .topbar, .cn-toast, .pal-ovl, .note-p1, .filters, .btn-mini, .select, .inp { display: none !important; }
+  .only-print { display: block !important; }
+  body { background: #fff !important; }
+  .content { max-width: 100% !important; padding: 0 !important; }
+  .screen { gap: 12px; }
+  .card, .kpi, .bc-tomtat, .alert-row, .bc-nhan, .gp-stat {
+    background: #fff !important; border-color: #d8dee8 !important; box-shadow: none !important;
+  }
+  .card, .card h2, .kpi-value, .kpi-label, .bc-tieude, .bc-ky, .tbl td, .bc-hang-n, .bc-nhan-n, .kstat-v {
+    color: #16202e !important;
+  }
+  .bc-bullets li, .bc-nhandinh, .alert-noidung, .v-txt { color: #2a3646 !important; }
+  .tbl th { color: #5a6675 !important; border-color: #d8dee8 !important; }
+  .tbl td { border-color: #e5eaf1 !important; }
+  .mut, .muted, .page-sub, .bc-sub-h { color: #6a7686 !important; }
+  .print-head { margin-bottom: 6px; }
+  .print-t { font-family: var(--f-head); font-weight: 700; font-size: 1.05rem; color: #16202e; }
+  .print-s { color: #6a7686; font-size: .8rem; margin-top: 3px; }
+  .card { break-inside: avoid; }
+  /* Canvas ECharts vẽ theo bề rộng màn hình -> co lại theo khổ giấy, không cắt */
+  canvas { max-width: 100% !important; height: auto !important; }
+  /* Các màu nhạt trên nền tối sẽ vô hình trên giấy trắng -> ép về tối/đậm */
+  .bc-ky strong, .alert-kenh, .link, .v-txt.link, .d-up, .d-down, .d-flat, .nhan, .pin-ten { color: #16202e !important; }
+  .hang { background: #fff !important; color: #16202e !important; border: 1px solid #b9c2cf; }
+  .badge, .pill { color: #16202e !important; background: #fff !important; border: 1px solid #d8dee8 !important; }
+}
+
 /* ---- Responsive shell ---- */
 @media (min-width: 680px) {
   .kpi-grid { grid-template-columns: repeat(4, 1fr); }

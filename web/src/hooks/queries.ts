@@ -190,6 +190,25 @@ export function useSyncLog(limitN = 20) {
   });
 }
 
+// Metric ngày trong một khoảng [tu, den] — bảng chi tiết từng kênh của báo cáo tuần.
+export function useMetricsKhoang(tu?: string, den?: string) {
+  return useQuery({
+    enabled: !!tu && !!den,
+    queryKey: ["metrics_khoang", tu, den],
+    queryFn: () =>
+      fetchAll<MetricNgay>((from, to) =>
+        supabase
+          .from("tk_metric_ngay")
+          .select("*")
+          .gte("ngay", tu!)
+          .lte("ngay", den!)
+          .order("ngay")
+          .order("kenh_id")
+          .range(from, to),
+      ),
+  });
+}
+
 // Báo cáo tuần (mới -> cũ). Mỗi tuần 1 dòng, JSONB nhỏ — lấy vài tuần gần nhất.
 export function useBaoCaoTuan(limitN = 12) {
   return useQuery({

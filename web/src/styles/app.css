@@ -475,6 +475,9 @@ body {
 .tk-open { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; text-decoration: none; color: var(--teal); border-color: rgba(63, 182, 168, 0.4); }
 .tk-note { display: flex; align-items: flex-start; gap: 8px; font-size: .78rem; color: var(--mut); background: var(--bg-2); border: 1px solid rgba(203, 164, 90, 0.25); border-radius: var(--r-sm); padding: 10px 12px; line-height: 1.55; }
 .tk-note svg { color: var(--gold); flex: 0 0 auto; margin-top: 2px; }
+.tk-note > span { min-width: 0; flex: 1; }
+.tk-note strong { color: var(--gold-soft); }
+.tk-note em { font-style: normal; color: var(--ink-2); }
 
 /* ---- In / Lưu PDF (nút In ở tab Báo cáo) ---- */
 .only-print { display: none; }

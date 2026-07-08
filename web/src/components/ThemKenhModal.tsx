@@ -101,7 +101,7 @@ export function ThemKenhModal({ mo, dong }: { mo: boolean; dong: () => void }) {
 
               <div className="tk-note">
                 <Icon name="bulb" size={13} />
-                Đang ở giai đoạn <strong>Sandbox</strong>: chỉ tài khoản TikTok đã được thêm vào <em>Target Users</em> ở TikTok Developer mới đăng nhập được. Sau khi TikTok duyệt (App Review) là dùng cho mọi cửa hàng.
+                <span>Đang ở giai đoạn <strong>Sandbox</strong>: chỉ tài khoản TikTok đã được thêm vào <em>Target Users</em> ở TikTok Developer mới đăng nhập được. Sau khi TikTok duyệt (App Review) là dùng cho mọi cửa hàng.</span>
               </div>
             </>
           )}

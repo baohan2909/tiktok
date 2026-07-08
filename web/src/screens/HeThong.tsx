@@ -1,11 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useKenhs, useSyncLog } from "../hooks/queries";
 import { KpiCard, SectionCard, EmptyState, Loading, TrangThaiKenh, Icon } from "../components/ui";
 import { soVN, khiNao } from "../lib/format";
+import { ThemKenhModal } from "../components/ThemKenhModal";
 
 export function HeThong() {
   const kenhs = useKenhs();
   const syncLog = useSyncLog(15);
+  const [themMo, setThemMo] = useState(false);
 
   const dem = useMemo(() => {
     const list = kenhs.data ?? [];
@@ -37,6 +39,21 @@ export function HeThong() {
 
   return (
     <div className="screen">
+      {/* Kênh & kết nối — trung tâm quản trị cửa hàng */}
+      <SectionCard
+        title="Kênh & Kết nối"
+        icon="link"
+        right={
+          <button className="btn-cn-primary" onClick={() => setThemMo(true)}>
+            <Icon name="link" size={14} /> Thêm kênh mới
+          </button>
+        }
+      >
+        <div className="cn-info">
+          Bấm <strong>"Thêm kênh mới"</strong> để lấy đường dẫn kết nối cho một cửa hàng, hoặc mở trang kết nối ngay trên trình duyệt này.
+        </div>
+      </SectionCard>
+
       <div className="kpi-grid">
         <KpiCard icon="link" tone="teal" label="Đã kết nối" value={`${dem.hoatDong}/${dem.tong}`} />
         <KpiCard icon="link" label="Chưa kết nối" value={soVN(dem.chuaKetNoi)} />
@@ -95,6 +112,8 @@ export function HeThong() {
         <Icon name="grid" size={14} />
         Danh sách kênh trạng thái: {dem.hoatDong} <TrangThaiKenh tt="HOAT_DONG" />, {dem.tokenLoi} <TrangThaiKenh tt="TOKEN_LOI" />.
       </div>
+
+      <ThemKenhModal mo={themMo} dong={() => setThemMo(false)} />
     </div>
   );
 }

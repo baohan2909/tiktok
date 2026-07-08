@@ -453,6 +453,29 @@ body {
 *::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 99px; border: 2px solid var(--bg); }
 *::-webkit-scrollbar-track { background: transparent; }
 
+/* ---- Thêm kênh mới (Hệ thống) ---- */
+.btn-cn-primary {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  border: 1px solid transparent; border-radius: 999px; padding: 8px 15px;
+  font-family: var(--f-body); font-weight: 600; font-size: .84rem; color: #10203a;
+  background: linear-gradient(180deg, var(--gold-soft), var(--gold));
+}
+.btn-cn-primary:hover { filter: brightness(1.05); }
+.cn-info { font-size: .86rem; color: var(--ink-2); line-height: 1.55; }
+.tk-modal { max-width: 560px; }
+.tk-tieude { font-family: var(--f-head); font-weight: 600; font-size: 1.05rem; }
+.tk-body { display: grid; gap: 14px; }
+.tk-sub { color: var(--mut); font-size: .78rem; text-transform: uppercase; letter-spacing: .5px; margin-top: 4px; }
+.tk-url-row { display: flex; gap: 8px; align-items: center; }
+.tk-url-row .inp { flex: 1; font-size: .82rem; }
+.tk-cach { display: grid; gap: 12px; margin-top: 4px; }
+.tk-cach-item { display: flex; gap: 12px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px 13px; }
+.tk-num { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 999px; background: var(--card); border: 1px solid var(--line-2); display: flex; align-items: center; justify-content: center; color: var(--gold-soft); font-family: var(--f-head); font-weight: 700; font-size: .85rem; }
+.tk-cach-t { font-weight: 600; color: var(--ink); font-size: .9rem; margin-bottom: 3px; }
+.tk-open { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; text-decoration: none; color: var(--teal); border-color: rgba(63, 182, 168, 0.4); }
+.tk-note { display: flex; align-items: flex-start; gap: 8px; font-size: .78rem; color: var(--mut); background: var(--bg-2); border: 1px solid rgba(203, 164, 90, 0.25); border-radius: var(--r-sm); padding: 10px 12px; line-height: 1.55; }
+.tk-note svg { color: var(--gold); flex: 0 0 auto; margin-top: 2px; }
+
 /* ---- In / Lưu PDF (nút In ở tab Báo cáo) ---- */
 .only-print { display: none; }
 @media print {
